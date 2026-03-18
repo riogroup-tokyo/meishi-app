@@ -305,9 +305,9 @@ export function TalkPage() {
     return elements
   }
 
-  // Height: viewport minus MobileLayout header (56px) minus bottom nav (64px)
-  const containerStyle = "flex flex-col -mb-16"
-  const containerHeight = "calc(100dvh - 56px - 64px)"
+  // Height: viewport minus brand header (~52px) minus page header (48px) minus bottom nav (64px)
+  const containerStyle = "flex flex-col"
+  const containerHeight = "calc(100dvh - 100px - 64px)"
 
   if (loadingInitial) {
     return (

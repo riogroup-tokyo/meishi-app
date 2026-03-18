@@ -5,7 +5,7 @@ import { TalkPage } from "@/components/TalkPage"
 
 export default function TalkRoute() {
   return (
-    <MobileLayout title="トーク">
+    <MobileLayout title="トーク" noPadding>
       <TalkPage />
     </MobileLayout>
   )

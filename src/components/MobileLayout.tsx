@@ -14,6 +14,7 @@ interface MobileLayoutProps {
   showSearch?: boolean
   rightAction?: ReactNode
   hideHeader?: boolean
+  noPadding?: boolean
 }
 
 export function MobileLayout({
@@ -22,6 +23,7 @@ export function MobileLayout({
   showSearch = false,
   rightAction,
   hideHeader = false,
+  noPadding = false,
 }: MobileLayoutProps) {
   const router = useRouter()
   const { user, profile, loading, isAuthenticated } = useAuth()
@@ -44,12 +46,21 @@ export function MobileLayout({
   const avatarInitial = displayName.charAt(0).toUpperCase()
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      {/* Header */}
+    <div className="min-h-[100dvh] flex flex-col bg-background">
+      {/* Brand Header */}
+      <header className="bg-[#b71c1c] text-center py-3 pb-2">
+        <img
+          src="https://ranking.riogroup.info/img/logo.png"
+          alt="RioGroupロゴ"
+          className="max-w-[200px] mx-auto"
+        />
+      </header>
+
+      {/* Page Header */}
       {!hideHeader && (
-        <header className="sticky top-0 z-40 bg-white border-b border-gray-100">
-          <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto">
-            <h1 className="text-lg font-bold text-foreground">{title}</h1>
+        <div className="sticky top-0 z-40 bg-white border-b border-gray-100">
+          <div className="flex items-center justify-between h-12 px-4 max-w-lg mx-auto">
+            <h1 className="text-base font-bold text-foreground">{title}</h1>
             <div className="flex items-center gap-2">
               {showSearch && (
                 <button className="p-2 rounded-full hover:bg-gray-100 transition-colors">
@@ -65,11 +76,11 @@ export function MobileLayout({
               </Avatar>
             </div>
           </div>
-        </header>
+        </div>
       )}
 
-      {/* Main content - pb-16 for fixed bottom nav */}
-      <main className="flex-1 overflow-y-auto pb-16">
+      {/* Main content */}
+      <main className={`flex-1 overflow-y-auto ${noPadding ? '' : 'pb-16'}`}>
         <div className="max-w-lg mx-auto">
           {children}
         </div>
