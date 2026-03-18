@@ -217,7 +217,8 @@ export default function CardRegister() {
       router.push("/")
     } catch (err) {
       console.error("Failed to save card:", err)
-      toast.error("名刺の保存に失敗しました")
+      const message = err instanceof Error ? err.message : "不明なエラー"
+      toast.error(`保存失敗: ${message}`)
     } finally {
       setSaving(false)
     }
