@@ -13,7 +13,6 @@ import {
   signIn as authSignIn,
   signUp as authSignUp,
   signOut as authSignOut,
-  getCurrentUser,
   onAuthStateChange,
 } from "@/lib/auth"
 import { supabase } from "@/lib/supabase"
@@ -70,22 +69,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, fetchProfile])
 
   useEffect(() => {
+    let mounted = true
+
     // Fetch the current user on mount
-    getCurrentUser()
-      .then(async (u) => {
-        setUser(u)
-        if (u) {
-          await fetchProfile(u.id)
+    const init = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!mounted) return
+
+        const currentUser = session?.user ?? null
+        setUser(currentUser)
+
+        if (currentUser) {
+          await fetchProfile(currentUser.id)
         }
-      })
-      .catch(() => {
-        setUser(null)
-        setProfile(null)
-      })
-      .finally(() => setLoading(false))
+      } catch (err) {
+        console.error("Auth init error:", err)
+        if (mounted) {
+          setUser(null)
+          setProfile(null)
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    init()
 
     // Listen to auth state changes
     const subscription = onAuthStateChange(async (_event, session) => {
+      if (!mounted) return
       const currentUser = session?.user ?? null
       setUser(currentUser)
       if (currentUser) {
@@ -96,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     return () => {
+      mounted = false
       subscription.unsubscribe()
     }
   }, [fetchProfile])
