@@ -104,13 +104,19 @@ export default function LoginPage() {
     try {
       const user = await signUp(signupEmail, signupPassword, signupDisplayName.trim())
 
-      // Ensure profile exists (trigger should create it, but upsert as fallback)
       if (user) {
-        await supabase.from("profiles").upsert({
+        // Wait a moment for auth to settle, then create profile
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        const { error: profileError } = await supabase.from("profiles").upsert({
           id: user.id,
           display_name: signupDisplayName.trim(),
           email: signupEmail.trim(),
         })
+
+        if (profileError) {
+          console.error("Profile creation error:", profileError)
+        }
       }
 
       toast.success("アカウントを作成しました")
