@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/components/AuthProvider"
+import { supabase } from "@/lib/supabase"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -35,6 +36,7 @@ export default function LoginPage() {
   const [loginLoading, setLoginLoading] = useState(false)
 
   // Signup form state
+  const [signupDisplayName, setSignupDisplayName] = useState("")
   const [signupEmail, setSignupEmail] = useState("")
   const [signupPassword, setSignupPassword] = useState("")
   const [signupPasswordConfirm, setSignupPasswordConfirm] = useState("")
@@ -55,6 +57,9 @@ export default function LoginPage() {
 
   const validateSignup = (): boolean => {
     const errors: Record<string, string> = {}
+    if (!signupDisplayName.trim()) {
+      errors.displayName = "表示名を入力してください"
+    }
     if (!signupEmail.trim()) {
       errors.email = "メールアドレスを入力してください"
     }
@@ -97,7 +102,17 @@ export default function LoginPage() {
 
     setSignupLoading(true)
     try {
-      await signUp(signupEmail, signupPassword)
+      const user = await signUp(signupEmail, signupPassword)
+
+      // Create profile in Supabase
+      if (user) {
+        await supabase.from("profiles").upsert({
+          id: user.id,
+          display_name: signupDisplayName.trim(),
+          email: signupEmail.trim(),
+        })
+      }
+
       toast.success("アカウントを作成しました")
       router.push("/")
     } catch (error: unknown) {
@@ -124,7 +139,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-3 pb-2">
           <div className="flex justify-center">
-            <div className="size-12 rounded-xl bg-[#00bd5d] flex items-center justify-center shadow-md">
+            <div className="size-12 rounded-xl bg-[#b71c1c] flex items-center justify-center shadow-md">
               <CreditCard className="size-6 text-white" />
             </div>
           </div>
@@ -161,6 +176,7 @@ export default function LoginPage() {
                       })
                     }}
                     autoComplete="email"
+                    className="h-11"
                   />
                   {loginErrors.email && (
                     <p className="text-sm text-destructive">
@@ -184,6 +200,7 @@ export default function LoginPage() {
                       })
                     }}
                     autoComplete="current-password"
+                    className="h-11"
                   />
                   {loginErrors.password && (
                     <p className="text-sm text-destructive">
@@ -200,7 +217,7 @@ export default function LoginPage() {
 
                 <Button
                   type="submit"
-                  className="w-full bg-[#00bd5d] hover:bg-[#00a550] text-white"
+                  className="w-full h-11 bg-[#b71c1c] hover:bg-[#9a1515] text-white"
                   disabled={loginLoading}
                 >
                   {loginLoading && (
@@ -214,6 +231,30 @@ export default function LoginPage() {
             {/* Signup Tab */}
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signup-display-name">表示名</Label>
+                  <Input
+                    id="signup-display-name"
+                    type="text"
+                    placeholder="山田 太郎"
+                    value={signupDisplayName}
+                    onChange={(e) => {
+                      setSignupDisplayName(e.target.value)
+                      setSignupErrors((prev) => {
+                        const { displayName, ...rest } = prev
+                        return rest
+                      })
+                    }}
+                    autoComplete="name"
+                    className="h-11"
+                  />
+                  {signupErrors.displayName && (
+                    <p className="text-sm text-destructive">
+                      {signupErrors.displayName}
+                    </p>
+                  )}
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">メールアドレス</Label>
                   <Input
@@ -229,6 +270,7 @@ export default function LoginPage() {
                       })
                     }}
                     autoComplete="email"
+                    className="h-11"
                   />
                   {signupErrors.email && (
                     <p className="text-sm text-destructive">
@@ -252,6 +294,7 @@ export default function LoginPage() {
                       })
                     }}
                     autoComplete="new-password"
+                    className="h-11"
                   />
                   {signupErrors.password && (
                     <p className="text-sm text-destructive">
@@ -277,6 +320,7 @@ export default function LoginPage() {
                       })
                     }}
                     autoComplete="new-password"
+                    className="h-11"
                   />
                   {signupErrors.passwordConfirm && (
                     <p className="text-sm text-destructive">
@@ -293,7 +337,7 @@ export default function LoginPage() {
 
                 <Button
                   type="submit"
-                  className="w-full bg-[#00bd5d] hover:bg-[#00a550] text-white"
+                  className="w-full h-11 bg-[#b71c1c] hover:bg-[#9a1515] text-white"
                   disabled={signupLoading}
                 >
                   {signupLoading && (

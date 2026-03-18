@@ -16,63 +16,121 @@ import {
   getCurrentUser,
   onAuthStateChange,
 } from "@/lib/auth"
+import { supabase } from "@/lib/supabase"
+
+export interface Profile {
+  id: string
+  display_name: string | null
+  avatar_url: string | null
+  email: string | null
+}
 
 interface AuthContextType {
   user: User | null
+  profile: Profile | null
   loading: boolean
   isAuthenticated: boolean
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string) => Promise<void>
+  signUp: (email: string, password: string) => Promise<User>
   signOut: () => Promise<void>
+  refreshProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const fetchProfile = useCallback(async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url, email")
+        .eq("id", userId)
+        .single()
+
+      if (error) {
+        console.error("Failed to fetch profile:", error)
+        setProfile(null)
+      } else {
+        setProfile(data as Profile)
+      }
+    } catch (err) {
+      console.error("Failed to fetch profile:", err)
+      setProfile(null)
+    }
+  }, [])
+
+  const refreshProfile = useCallback(async () => {
+    if (user) {
+      await fetchProfile(user.id)
+    }
+  }, [user, fetchProfile])
 
   useEffect(() => {
     // Fetch the current user on mount
     getCurrentUser()
-      .then((u) => setUser(u))
-      .catch(() => setUser(null))
+      .then(async (u) => {
+        setUser(u)
+        if (u) {
+          await fetchProfile(u.id)
+        }
+      })
+      .catch(() => {
+        setUser(null)
+        setProfile(null)
+      })
       .finally(() => setLoading(false))
 
     // Listen to auth state changes
-    const subscription = onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
+    const subscription = onAuthStateChange(async (_event, session) => {
+      const currentUser = session?.user ?? null
+      setUser(currentUser)
+      if (currentUser) {
+        await fetchProfile(currentUser.id)
+      } else {
+        setProfile(null)
+      }
     })
 
     return () => {
       subscription.unsubscribe()
     }
-  }, [])
+  }, [fetchProfile])
 
   const signIn = useCallback(async (email: string, password: string) => {
     const data = await authSignIn(email, password)
     setUser(data.user)
-  }, [])
+    if (data.user) {
+      await fetchProfile(data.user.id)
+    }
+  }, [fetchProfile])
 
-  const signUp = useCallback(async (email: string, password: string) => {
+  const signUp = useCallback(async (email: string, password: string): Promise<User> => {
     const data = await authSignUp(email, password)
     setUser(data.user)
+    return data.user!
   }, [])
 
   const signOut = useCallback(async () => {
     await authSignOut()
     setUser(null)
+    setProfile(null)
   }, [])
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        profile,
         loading,
         isAuthenticated: !!user,
         signIn,
         signUp,
         signOut,
+        refreshProfile,
       }}
     >
       {children}

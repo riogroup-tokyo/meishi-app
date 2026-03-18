@@ -25,7 +25,6 @@ export function exportAsCSV(cards: BusinessCard[], filename?: string): void {
     'メール',
     '電話',
     '携帯',
-    'FAX',
     '郵便番号',
     '住所',
     'ウェブサイト',
@@ -43,7 +42,6 @@ export function exportAsCSV(cards: BusinessCard[], filename?: string): void {
       card.email,
       card.phone,
       card.mobile_phone,
-      card.fax,
       card.postal_code,
       card.address,
       card.website,
@@ -91,10 +89,6 @@ export function exportAsVCard(cards: BusinessCard[], filename?: string): void {
 
     if (card.mobile_phone) {
       lines.push(`TEL;TYPE=CELL,VOICE:${card.mobile_phone}`)
-    }
-
-    if (card.fax) {
-      lines.push(`TEL;TYPE=WORK,FAX:${card.fax}`)
     }
 
     if (card.email) {

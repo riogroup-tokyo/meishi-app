@@ -7,6 +7,12 @@ import type {
   TagInsert,
   TagUpdate,
   CardRelation,
+  Profile,
+  ProfileUpdate,
+  Message,
+  CalendarEvent,
+  CalendarEventInsert,
+  CalendarEventUpdate,
 } from '@/types/database'
 
 // ============================================================
@@ -180,6 +186,55 @@ export async function deleteCard(cardId: string): Promise<void> {
   if (error) {
     throw new Error(`Failed to delete card: ${error.message}`)
   }
+}
+
+export async function toggleFavorite(
+  cardId: string,
+  isFavorite: boolean
+): Promise<BusinessCard> {
+  const { data, error } = await supabase
+    .from('business_cards')
+    .update({ is_favorite: isFavorite } as Record<string, unknown>)
+    .eq('id', cardId)
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to toggle favorite: ${error.message}`)
+  }
+
+  return data as BusinessCard
+}
+
+interface GetGroupCardsOptions {
+  search?: string
+}
+
+export async function getGroupCards(
+  options: GetGroupCardsOptions = {}
+): Promise<BusinessCard[]> {
+  const { search } = options
+
+  let query = supabase
+    .from('business_cards')
+    .select('*')
+
+  if (search) {
+    const pattern = `%${search}%`
+    query = query.or(
+      `person_name.ilike.${pattern},company_name.ilike.${pattern},email.ilike.${pattern},memo.ilike.${pattern},department.ilike.${pattern},position.ilike.${pattern}`
+    )
+  }
+
+  query = query.order('created_at', { ascending: false })
+
+  const { data, error } = await query
+
+  if (error) {
+    throw new Error(`Failed to fetch group cards: ${error.message}`)
+  }
+
+  return (data ?? []) as BusinessCard[]
 }
 
 // ============================================================
@@ -373,4 +428,164 @@ export async function getRelatedCards(
     relation_id: relatedMap.get(card.id)!.relation_id,
     relation_type: relatedMap.get(card.id)!.relation_type,
   }))
+}
+
+// ============================================================
+// Profiles
+// ============================================================
+
+export async function getProfile(userId: string): Promise<Profile> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to fetch profile: ${error.message}`)
+  }
+
+  return data as Profile
+}
+
+export async function updateProfile(
+  userId: string,
+  updates: ProfileUpdate
+): Promise<Profile> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(updates as Record<string, unknown>)
+    .eq('id', userId)
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to update profile: ${error.message}`)
+  }
+
+  return data as Profile
+}
+
+export async function getAllProfiles(): Promise<Profile[]> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .order('display_name', { ascending: true })
+
+  if (error) {
+    throw new Error(`Failed to fetch profiles: ${error.message}`)
+  }
+
+  return (data ?? []) as Profile[]
+}
+
+// ============================================================
+// Messages
+// ============================================================
+
+export async function getMessages(
+  limit: number = 50,
+  before?: string
+): Promise<Message[]> {
+  let query = supabase
+    .from('messages')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (before) {
+    query = query.lt('created_at', before)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    throw new Error(`Failed to fetch messages: ${error.message}`)
+  }
+
+  return (data ?? []) as Message[]
+}
+
+export async function sendMessage(
+  userId: string,
+  content: string
+): Promise<Message> {
+  const { data, error } = await supabase
+    .from('messages')
+    .insert({ user_id: userId, content } as Record<string, unknown>)
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to send message: ${error.message}`)
+  }
+
+  return data as Message
+}
+
+// ============================================================
+// Calendar Events
+// ============================================================
+
+export async function getCalendarEvents(
+  startDate: string,
+  endDate: string
+): Promise<CalendarEvent[]> {
+  const { data, error } = await supabase
+    .from('calendar_events')
+    .select('*')
+    .gte('start_time', startDate)
+    .lte('end_time', endDate)
+    .order('start_time', { ascending: true })
+
+  if (error) {
+    throw new Error(`Failed to fetch calendar events: ${error.message}`)
+  }
+
+  return (data ?? []) as CalendarEvent[]
+}
+
+export async function createCalendarEvent(
+  event: CalendarEventInsert
+): Promise<CalendarEvent> {
+  const { data, error } = await supabase
+    .from('calendar_events')
+    .insert(event as Record<string, unknown>)
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to create calendar event: ${error.message}`)
+  }
+
+  return data as CalendarEvent
+}
+
+export async function updateCalendarEvent(
+  id: string,
+  updates: CalendarEventUpdate
+): Promise<CalendarEvent> {
+  const { data, error } = await supabase
+    .from('calendar_events')
+    .update(updates as Record<string, unknown>)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to update calendar event: ${error.message}`)
+  }
+
+  return data as CalendarEvent
+}
+
+export async function deleteCalendarEvent(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('calendar_events')
+    .delete()
+    .eq('id', id)
+
+  if (error) {
+    throw new Error(`Failed to delete calendar event: ${error.message}`)
+  }
 }

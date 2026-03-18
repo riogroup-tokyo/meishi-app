@@ -233,13 +233,6 @@ export default function CardDetail({
                     </a>
                   </div>
                 )}
-                {card.fax && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <PrinterIcon className="size-4 shrink-0 text-muted-foreground" />
-                    <span className="text-muted-foreground">FAX:</span>
-                    <span>{card.fax}</span>
-                  </div>
-                )}
                 {card.email && (
                   <div className="flex items-center gap-2 text-sm">
                     <MailIcon className="size-4 shrink-0 text-muted-foreground" />

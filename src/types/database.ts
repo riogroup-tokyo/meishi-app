@@ -22,11 +22,11 @@ export interface Database {
           email: string | null
           phone: string | null
           mobile_phone: string | null
-          fax: string | null
           postal_code: string | null
           address: string | null
           website: string | null
           memo: string | null
+          is_favorite: boolean
           created_at: string
           updated_at: string
         }
@@ -42,11 +42,11 @@ export interface Database {
           email?: string | null
           phone?: string | null
           mobile_phone?: string | null
-          fax?: string | null
           postal_code?: string | null
           address?: string | null
           website?: string | null
           memo?: string | null
+          is_favorite?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -62,11 +62,11 @@ export interface Database {
           email?: string | null
           phone?: string | null
           mobile_phone?: string | null
-          fax?: string | null
           postal_code?: string | null
           address?: string | null
           website?: string | null
           memo?: string | null
+          is_favorite?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -137,6 +137,81 @@ export interface Database {
           created_at?: string
         }
       }
+      profiles: {
+        Row: {
+          id: string
+          display_name: string
+          avatar_url: string | null
+          email: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          display_name: string
+          avatar_url?: string | null
+          email?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          display_name?: string
+          avatar_url?: string | null
+          email?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      messages: {
+        Row: {
+          id: string
+          user_id: string
+          content: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          content: string
+          created_at?: string
+        }
+      }
+      calendar_events: {
+        Row: {
+          id: string
+          user_id: string
+          card_id: string | null
+          title: string
+          description: string | null
+          start_time: string
+          end_time: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          card_id?: string | null
+          title: string
+          description?: string | null
+          start_time: string
+          end_time: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          card_id?: string | null
+          title?: string
+          description?: string | null
+          start_time?: string
+          end_time?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -164,3 +239,14 @@ export type CardTagInsert = Database['public']['Tables']['card_tags']['Insert']
 
 export type CardRelation = Database['public']['Tables']['card_relations']['Row']
 export type CardRelationInsert = Database['public']['Tables']['card_relations']['Insert']
+
+export type Profile = Database['public']['Tables']['profiles']['Row']
+export type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
+export type ProfileUpdate = Database['public']['Tables']['profiles']['Update']
+
+export type Message = Database['public']['Tables']['messages']['Row']
+export type MessageInsert = Database['public']['Tables']['messages']['Insert']
+
+export type CalendarEvent = Database['public']['Tables']['calendar_events']['Row']
+export type CalendarEventInsert = Database['public']['Tables']['calendar_events']['Insert']
+export type CalendarEventUpdate = Database['public']['Tables']['calendar_events']['Update']

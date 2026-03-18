@@ -50,7 +50,6 @@ export interface CardFormData {
   email: string
   phone: string
   mobile_phone: string
-  fax: string
   postal_code: string
   address: string
   website: string
@@ -79,7 +78,6 @@ const EMPTY_FORM: CardFormData = {
   email: "",
   phone: "",
   mobile_phone: "",
-  fax: "",
   postal_code: "",
   address: "",
   website: "",
@@ -102,7 +100,6 @@ function cardToFormData(
     email: card.email ?? "",
     phone: card.phone ?? "",
     mobile_phone: card.mobile_phone ?? "",
-    fax: card.fax ?? "",
     postal_code: card.postal_code ?? "",
     address: card.address ?? "",
     website: card.website ?? "",
@@ -232,7 +229,6 @@ export default function CardForm({
         email: result.email || prev.email,
         phone: result.phone || prev.phone,
         mobile_phone: result.mobile_phone || prev.mobile_phone,
-        fax: result.fax || prev.fax,
         postal_code: result.postal_code || prev.postal_code,
         address: result.address || prev.address,
         website: result.website || prev.website,
@@ -464,18 +460,6 @@ export default function CardForm({
                     placeholder="090-1234-5678"
                   />
                 </div>
-              </div>
-
-              {/* FAX */}
-              <div className="space-y-1">
-                <Label htmlFor="fax">FAX</Label>
-                <Input
-                  id="fax"
-                  type="tel"
-                  value={form.fax}
-                  onChange={(e) => updateField("fax", e.target.value)}
-                  placeholder="03-1234-5679"
-                />
               </div>
 
               {/* Postal code + Address */}

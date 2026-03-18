@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Noto_Sans_JP } from "next/font/google";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/components/AuthProvider";
@@ -12,8 +12,22 @@ const notoSansJP = Noto_Sans_JP({
 });
 
 export const metadata: Metadata = {
-  title: "名刺管理アプリ - Meishi",
+  title: "名刺管理アプリ",
   description: "ビジネスカードをスマートに管理。OCR読み取り、タグ整理、簡単検索。",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "名刺管理アプリ",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -25,10 +39,10 @@ export default function RootLayout({
     <html lang="ja" suppressHydrationWarning>
       <body className={`${notoSansJP.variable} antialiased`}>
         <AuthProvider>
-        {children}
+          {children}
         </AuthProvider>
         <Toaster
-          position="bottom-right"
+          position="top-center"
           richColors
           closeButton
           toastOptions={{

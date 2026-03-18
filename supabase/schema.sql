@@ -22,11 +22,11 @@ create table if not exists business_cards (
   email text,
   phone text,
   mobile_phone text,
-  fax text,
   postal_code text,
   address text,
   website text,
   memo text,
+  is_favorite boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -55,6 +55,34 @@ create table if not exists card_relations (
   created_at timestamptz not null default now(),
   unique (card_id, related_card_id),
   check (card_id <> related_card_id)
+);
+
+create table if not exists profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  display_name text not null,
+  avatar_url text,
+  email text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists messages (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid not null references profiles(id) on delete cascade,
+  content text not null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists calendar_events (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid not null references profiles(id) on delete cascade,
+  card_id uuid references business_cards(id) on delete set null,
+  title text not null,
+  description text,
+  start_time timestamptz not null,
+  end_time timestamptz not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 -- ============================================================
@@ -92,6 +120,14 @@ create index if not exists idx_business_cards_fts on business_cards using gin (
   )
 );
 
+-- Messages indexes
+create index if not exists idx_messages_created_at on messages(created_at);
+
+-- Calendar events indexes
+create index if not exists idx_calendar_events_start_time on calendar_events(start_time);
+create index if not exists idx_calendar_events_end_time on calendar_events(end_time);
+create index if not exists idx_calendar_events_user_id on calendar_events(user_id);
+
 -- ============================================================
 -- updated_at trigger
 -- ============================================================
@@ -109,6 +145,38 @@ create trigger trg_business_cards_updated_at
   for each row
   execute function update_updated_at();
 
+create trigger trg_profiles_updated_at
+  before update on profiles
+  for each row
+  execute function update_updated_at();
+
+create trigger trg_calendar_events_updated_at
+  before update on calendar_events
+  for each row
+  execute function update_updated_at();
+
+-- ============================================================
+-- Auto-create profile on user signup
+-- ============================================================
+
+create or replace function handle_new_user()
+returns trigger as $$
+begin
+  insert into profiles (id, display_name, email)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data ->> 'display_name', new.email, 'User'),
+    new.email
+  );
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row
+  execute function handle_new_user();
+
 -- ============================================================
 -- Row Level Security
 -- ============================================================
@@ -117,6 +185,9 @@ alter table business_cards enable row level security;
 alter table tags enable row level security;
 alter table card_tags enable row level security;
 alter table card_relations enable row level security;
+alter table profiles enable row level security;
+alter table messages enable row level security;
+alter table calendar_events enable row level security;
 
 -- business_cards policies
 create policy "Users can view their own cards"
@@ -215,3 +286,40 @@ create policy "Users can delete their own card_relations"
         and business_cards.user_id = auth.uid()
     )
   );
+
+-- profiles policies
+create policy "Users can view all profiles"
+  on profiles for select
+  using (auth.role() = 'authenticated');
+
+create policy "Users can update their own profile"
+  on profiles for update
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
+
+-- messages policies
+create policy "Authenticated users can view all messages"
+  on messages for select
+  using (auth.role() = 'authenticated');
+
+create policy "Users can insert their own messages"
+  on messages for insert
+  with check (auth.uid() = user_id);
+
+-- calendar_events policies
+create policy "Authenticated users can view all events"
+  on calendar_events for select
+  using (auth.role() = 'authenticated');
+
+create policy "Users can insert their own events"
+  on calendar_events for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can update their own events"
+  on calendar_events for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "Users can delete their own events"
+  on calendar_events for delete
+  using (auth.uid() = user_id);
