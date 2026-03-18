@@ -1,10 +1,15 @@
 import { supabase } from './supabase'
 import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js'
 
-export async function signUp(email: string, password: string) {
+export async function signUp(email: string, password: string, displayName?: string) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      data: {
+        display_name: displayName || email,
+      },
+    },
   })
   if (error) throw error
   return data

@@ -31,7 +31,7 @@ interface AuthContextType {
   loading: boolean
   isAuthenticated: boolean
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string) => Promise<User>
+  signUp: (email: string, password: string, displayName?: string) => Promise<User>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
 }
@@ -108,8 +108,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [fetchProfile])
 
-  const signUp = useCallback(async (email: string, password: string): Promise<User> => {
-    const data = await authSignUp(email, password)
+  const signUp = useCallback(async (email: string, password: string, displayName?: string): Promise<User> => {
+    const data = await authSignUp(email, password, displayName)
     setUser(data.user)
     return data.user!
   }, [])

@@ -102,9 +102,9 @@ export default function LoginPage() {
 
     setSignupLoading(true)
     try {
-      const user = await signUp(signupEmail, signupPassword)
+      const user = await signUp(signupEmail, signupPassword, signupDisplayName.trim())
 
-      // Create profile in Supabase
+      // Ensure profile exists (trigger should create it, but upsert as fallback)
       if (user) {
         await supabase.from("profiles").upsert({
           id: user.id,
