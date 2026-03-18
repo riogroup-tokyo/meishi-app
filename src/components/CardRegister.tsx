@@ -607,8 +607,8 @@ export default function CardRegister() {
         </div>
       </div>
 
-      {/* Fixed save button */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 p-4 bg-background border-t safe-area-bottom">
+      {/* Fixed save button - above bottom nav */}
+      <div className="fixed bottom-16 left-0 right-0 z-40 p-4 bg-background border-t">
         <Button
           onClick={handleSave}
           disabled={saving || !personName.trim()}

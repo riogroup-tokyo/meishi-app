@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import {
   Search,
@@ -8,7 +8,6 @@ import {
   Star,
   Loader2,
   Plus,
-  RefreshCw,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -50,9 +49,16 @@ export default function CardBook() {
   // UI state
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
-  const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [debouncedQuery, setDebouncedQuery] = useState("")
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
+
+  // Tag filter toggle
+  const handleToggleTagFilter = useCallback((tagId: string) => {
+    setSelectedTagIds((prev) =>
+      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
+    )
+  }, [])
 
   // Detail sheet
   const [detailCardId, setDetailCardId] = useState<string | null>(null)
@@ -63,9 +69,6 @@ export default function CardBook() {
   const [cardToDelete, setCardToDelete] = useState<string | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
-  // Search ref for auto-focus
-  const searchInputRef = useRef<HTMLInputElement>(null)
-
   // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -73,13 +76,6 @@ export default function CardBook() {
     }, 300)
     return () => clearTimeout(timer)
   }, [searchQuery])
-
-  // Focus search input when opened
-  useEffect(() => {
-    if (searchOpen) {
-      setTimeout(() => searchInputRef.current?.focus(), 100)
-    }
-  }, [searchOpen])
 
   // Fetch tags
   const fetchTags = useCallback(async () => {
@@ -262,20 +258,38 @@ export default function CardBook() {
     }
   }, [cardToDelete])
 
+  // Filter cards by selected tags
+  const filteredMyCards = useMemo(() => {
+    if (selectedTagIds.length === 0) return myCards
+    return myCards.filter((card) => {
+      const cardTags = cardTagMap.get(card.id) ?? []
+      return selectedTagIds.every((tagId) => cardTags.some((t) => t.id === tagId))
+    })
+  }, [myCards, selectedTagIds, cardTagMap])
+
   // Separate favorite / non-favorite cards for the 自分 tab
   const favoriteCards = useMemo(
-    () => myCards.filter((c) => c.is_favorite),
-    [myCards]
+    () => filteredMyCards.filter((c) => c.is_favorite),
+    [filteredMyCards]
   )
   const regularCards = useMemo(
-    () => myCards.filter((c) => !c.is_favorite),
-    [myCards]
+    () => filteredMyCards.filter((c) => !c.is_favorite),
+    [filteredMyCards]
   )
+
+  // Filter group cards by selected tags
+  const filteredGroupCards = useMemo(() => {
+    if (selectedTagIds.length === 0) return groupCards
+    return groupCards.filter((card) => {
+      const cardTags = cardTagMap.get(card.id) ?? []
+      return selectedTagIds.every((tagId) => cardTags.some((t) => t.id === tagId))
+    })
+  }, [groupCards, selectedTagIds, cardTagMap])
 
   // Group cards by user_id for the グループ tab
   const groupedByUser = useMemo(() => {
     const grouped = new Map<string, BusinessCard[]>()
-    for (const card of groupCards) {
+    for (const card of filteredGroupCards) {
       const existing = grouped.get(card.user_id) ?? []
       existing.push(card)
       grouped.set(card.user_id, existing)
@@ -292,37 +306,9 @@ export default function CardBook() {
   )
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-full bg-background">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background border-b">
-        <div className="flex items-center justify-between px-4 h-12">
-          <h1 className="text-base font-bold text-foreground">名刺帳</h1>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setSearchOpen(!searchOpen)}
-              className="p-2 rounded-full hover:bg-muted transition-colors"
-              aria-label="検索"
-            >
-              <Search className="size-5 text-foreground" />
-            </button>
-            <button
-              type="button"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="p-2 rounded-full hover:bg-muted transition-colors"
-              aria-label="更新"
-            >
-              <RefreshCw
-                className={cn(
-                  "size-5 text-foreground",
-                  refreshing && "animate-spin"
-                )}
-              />
-            </button>
-          </div>
-        </div>
-
         {/* Tabs */}
         <div className="flex border-b">
           <button
@@ -357,43 +343,80 @@ export default function CardBook() {
           </button>
         </div>
 
-        {/* Search bar */}
-        {searchOpen && (
-          <div className="px-4 py-2 border-b bg-background">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="名前、会社名、メールで検索..."
-                className="w-full h-9 pl-9 pr-9 text-sm rounded-lg border border-border bg-muted/50 outline-none focus:ring-2 focus:ring-[#b71c1c]/30 focus:border-[#b71c1c] transition-colors"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5"
-                >
-                  <X className="size-4 text-muted-foreground" />
-                </button>
+        {/* Search bar - always visible */}
+        <div className="px-4 py-2 bg-background">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="名前、会社名、メールで検索..."
+              className="w-full h-9 pl-9 pr-9 text-sm rounded-lg border border-border bg-muted/50 outline-none focus:ring-2 focus:ring-[#b71c1c]/30 focus:border-[#b71c1c] transition-colors"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5"
+              >
+                <X className="size-4 text-muted-foreground" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Tag filter - scrollable horizontal pills */}
+        {tags.length > 0 && (
+          <div className="px-4 pb-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <button
+              type="button"
+              onClick={() => setSelectedTagIds([])}
+              className={cn(
+                "shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-all border",
+                selectedTagIds.length === 0
+                  ? "border-[#b71c1c] bg-[#b71c1c] text-white"
+                  : "border-border bg-muted text-muted-foreground"
               )}
-            </div>
+            >
+              すべて
+            </button>
+            {tags.map((tag) => {
+              const isSelected = selectedTagIds.includes(tag.id)
+              return (
+                <button
+                  key={tag.id}
+                  type="button"
+                  onClick={() => handleToggleTagFilter(tag.id)}
+                  className={cn(
+                    "shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all border",
+                    isSelected
+                      ? "border-[#b71c1c] bg-[#b71c1c]/10 text-[#b71c1c]"
+                      : "border-border bg-muted text-muted-foreground"
+                  )}
+                >
+                  <span
+                    className="size-2 rounded-full"
+                    style={{ backgroundColor: tag.color }}
+                  />
+                  {tag.name}
+                </button>
+              )
+            })}
           </div>
         )}
       </header>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        {loading && myCards.length === 0 && groupCards.length === 0 ? (
+        {loading && filteredMyCards.length === 0 && filteredGroupCards.length === 0 ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="size-8 animate-spin text-muted-foreground" />
           </div>
         ) : activeTab === "mine" ? (
           /* === 自分 tab === */
           <div>
-            {myCards.length === 0 ? (
+            {filteredMyCards.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 px-4">
                 <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-4">
                   <Search className="size-7 text-muted-foreground" />
@@ -472,7 +495,7 @@ export default function CardBook() {
         ) : (
           /* === グループ tab === */
           <div>
-            {groupCards.length === 0 ? (
+            {filteredGroupCards.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 px-4">
                 <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-4">
                   <Search className="size-7 text-muted-foreground" />

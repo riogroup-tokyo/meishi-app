@@ -305,9 +305,9 @@ export function TalkPage() {
     return elements
   }
 
-  // Height: viewport minus header (56px) minus bottom nav (64px)
+  // Height: viewport minus MobileLayout header (56px) minus bottom nav (64px) minus safe area
   const containerStyle = "flex flex-col"
-  const containerHeight = "calc(100dvh - 56px - 64px)"
+  const containerHeight = "calc(100dvh - 56px - 64px - env(safe-area-inset-bottom, 0px))"
 
   if (loadingInitial) {
     return (
@@ -365,7 +365,7 @@ export function TalkPage() {
       </ScrollArea>
 
       {/* Input bar */}
-      <div className="border-t border-gray-200 bg-white px-3 py-2 shrink-0">
+      <div className="border-t border-gray-200 bg-white px-3 py-2 shrink-0 pb-2">
         <div className="flex items-end gap-2 max-w-lg mx-auto">
           <textarea
             ref={textareaRef}
