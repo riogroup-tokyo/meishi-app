@@ -68,8 +68,8 @@ export function MobileLayout({
         </header>
       )}
 
-      {/* Main content */}
-      <main className="flex-1 overflow-y-auto">
+      {/* Main content - pb-16 for fixed bottom nav */}
+      <main className="flex-1 overflow-y-auto pb-16">
         <div className="max-w-lg mx-auto">
           {children}
         </div>

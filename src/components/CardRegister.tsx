@@ -185,9 +185,14 @@ export default function CardRegister() {
     try {
       let imageUrl: string | null = null
 
-      // Upload image
+      // Upload image (non-blocking - card saves even if upload fails)
       if (imageFile) {
-        imageUrl = await uploadCardImage(imageFile, user.id)
+        try {
+          imageUrl = await uploadCardImage(imageFile, user.id)
+        } catch (uploadErr) {
+          console.error("Image upload failed:", uploadErr)
+          // Continue saving card without image
+        }
       }
 
       // Create card
