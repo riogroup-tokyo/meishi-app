@@ -66,13 +66,6 @@ export default function CardBook() {
   // Search ref for auto-focus
   const searchInputRef = useRef<HTMLInputElement>(null)
 
-  // Auth guard
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.push("/login")
-    }
-  }, [authLoading, isAuthenticated, router])
-
   // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -297,19 +290,6 @@ export default function CardBook() {
     },
     [profiles]
   )
-
-  // Auth loading
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="size-8 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
-
-  if (!isAuthenticated) {
-    return null
-  }
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -540,7 +520,7 @@ export default function CardBook() {
       <button
         type="button"
         onClick={() => router.push("/register")}
-        className="fixed bottom-6 right-6 z-50 size-14 rounded-full bg-[#b71c1c] text-white shadow-lg flex items-center justify-center hover:bg-[#b71c1c]/90 active:scale-95 transition-all"
+        className="fixed bottom-20 right-4 z-50 size-14 rounded-full bg-[#b71c1c] text-white shadow-lg flex items-center justify-center hover:bg-[#b71c1c]/90 active:scale-95 transition-all"
         aria-label="名刺を登録"
       >
         <Plus className="size-6" />

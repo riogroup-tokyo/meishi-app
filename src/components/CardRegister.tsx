@@ -79,13 +79,6 @@ export default function CardRegister() {
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
 
-  // Auth guard
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.push("/login")
-    }
-  }, [authLoading, isAuthenticated, router])
-
   // Fetch tags
   useEffect(() => {
     if (!user) return
@@ -246,19 +239,6 @@ export default function CardRegister() {
     selectedTagIds,
     router,
   ])
-
-  // Auth loading
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="size-8 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
-
-  if (!isAuthenticated) {
-    return null
-  }
 
   return (
     <div className="min-h-screen bg-background">
