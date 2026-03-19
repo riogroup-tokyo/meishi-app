@@ -98,7 +98,7 @@ export default function CardBook() {
       const fetchedTags = await getTags(user.id)
       setTags(fetchedTags)
       try {
-        sessionStorage.setItem("myTags", JSON.stringify(fetchedTags))
+        localStorage.setItem("myTags", JSON.stringify(fetchedTags))
       } catch {
         // Ignore storage errors
       }
@@ -137,7 +137,7 @@ export default function CardBook() {
 
       setMyCards(cards)
       try {
-        sessionStorage.setItem("myCards", JSON.stringify(cards))
+        localStorage.setItem("myCards", JSON.stringify(cards))
       } catch {
         // Ignore storage errors (e.g. quota exceeded)
       }
@@ -194,11 +194,11 @@ export default function CardBook() {
   // Restore cached data for instant display on mount
   useEffect(() => {
     try {
-      const cachedCards = sessionStorage.getItem("myCards")
+      const cachedCards = localStorage.getItem("myCards")
       if (cachedCards) {
         setMyCards(JSON.parse(cachedCards))
       }
-      const cachedTags = sessionStorage.getItem("myTags")
+      const cachedTags = localStorage.getItem("myTags")
       if (cachedTags) {
         setTags(JSON.parse(cachedTags))
       }
@@ -207,32 +207,44 @@ export default function CardBook() {
     }
   }, [])
 
-  // Initial load
+  // Initial load - progressive (show cards ASAP, load extras in background)
   useEffect(() => {
     if (!user) return
-    setLoading(true)
-    Promise.all([
-      fetchTags(),
-      fetchProfiles(),
-      fetchMyCards(),
-      fetchGroupCards(),
-    ]).finally(() => setLoading(false))
+
+    // If we have cached data, don't show loading spinner
+    const hasCached = myCards.length > 0
+    if (!hasCached) setLoading(true)
+
+    // Fetch own cards first (most important)
+    fetchMyCards()
+      .finally(() => setLoading(false))
+
+    // Load the rest in background (non-blocking)
+    fetchTags().catch(() => {})
+    fetchProfiles().catch(() => {})
+    fetchGroupCards().catch(() => {})
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   // Refetch when search changes
   useEffect(() => {
-    if (!user) return
-    const fetch = async () => {
-      if (activeTab === "mine") {
-        await fetchMyCards()
-      } else {
-        await fetchGroupCards()
-      }
+    if (!user || !debouncedQuery) return
+    if (activeTab === "mine") {
+      fetchMyCards().catch(() => {})
+    } else {
+      fetchGroupCards().catch(() => {})
     }
-    fetch()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedQuery, activeTab])
+  }, [debouncedQuery])
+
+  // Refetch when tab changes
+  useEffect(() => {
+    if (!user) return
+    if (activeTab === "group" && groupCards.length === 0) {
+      fetchGroupCards().catch(() => {})
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab])
 
   // Pull to refresh
   const handleRefresh = useCallback(async () => {

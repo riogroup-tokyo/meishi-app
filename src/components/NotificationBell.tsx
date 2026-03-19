@@ -27,14 +27,17 @@ export default function NotificationBell({ onCardSelect }: NotificationBellProps
   const [loading, setLoading] = useState(false)
   const generatedRef = useRef(false)
 
-  // Generate notifications once on mount
+  // Generate notifications - delayed to not block page load
   useEffect(() => {
     if (!user || generatedRef.current) return
     generatedRef.current = true
-    generateNotifications(user.id).then(() => {
-      // Refresh count after generation
-      getUnreadNotificationCount(user.id).then(setUnreadCount).catch(() => {})
-    }).catch(() => {})
+    // Wait 5 seconds after mount before generating notifications
+    const timer = setTimeout(() => {
+      generateNotifications(user.id).then(() => {
+        getUnreadNotificationCount(user.id).then(setUnreadCount).catch(() => {})
+      }).catch(() => {})
+    }, 5000)
+    return () => clearTimeout(timer)
   }, [user])
 
   // Fetch unread count

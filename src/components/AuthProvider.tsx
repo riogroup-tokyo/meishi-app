@@ -112,9 +112,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })
 
+    // Keep Supabase DB awake - ping every 4 minutes to prevent cold starts
+    const keepAlive = setInterval(() => {
+      supabase.from('profiles').select('id').limit(1).then(() => {})
+    }, 4 * 60 * 1000)
+
     return () => {
       mounted = false
       subscription.unsubscribe()
+      clearInterval(keepAlive)
     }
   }, [fetchProfile])
 
