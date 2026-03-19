@@ -19,12 +19,7 @@ import {
   Receipt,
   Users,
 } from "lucide-react"
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
+// Using custom modal instead of Sheet for iOS scroll compatibility
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
@@ -281,15 +276,19 @@ export default function CardDetailSheet({
     (t) => !cardTags.some((ct) => ct.id === t.id)
   )
 
+  if (!open) return null
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="bottom"
-        className="h-[85dvh] rounded-t-2xl p-0 flex flex-col"
-        showCloseButton={false}
-      >
-        {/* Drag handle */}
-        <div className="flex justify-center pt-3 pb-1 shrink-0">
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-50 bg-black/50"
+        onClick={() => onOpenChange(false)}
+      />
+      {/* Bottom panel */}
+      <div className="fixed inset-x-0 bottom-0 z-50 h-[85dvh] bg-background rounded-t-2xl flex flex-col">
+        {/* Drag handle + close */}
+        <div className="flex justify-center pt-3 pb-1 shrink-0" onClick={() => onOpenChange(false)}>
           <div className="w-10 h-1 bg-muted-foreground/30 rounded-full" />
         </div>
 
@@ -298,7 +297,10 @@ export default function CardDetailSheet({
             <Loader2 className="size-8 animate-spin text-muted-foreground" />
           </div>
         ) : card ? (
-          <div className="flex-1 overflow-y-auto overscroll-contain">
+          <div
+            className="flex-1 overflow-y-auto"
+            style={{ WebkitOverflowScrolling: "touch" }}
+          >
             <div className="pb-8">
               {/* Card image */}
               {card.image_url && (
@@ -312,7 +314,7 @@ export default function CardDetailSheet({
               )}
 
               {/* Header section */}
-              <SheetHeader className="px-4 pb-0">
+              <div className="px-4 pb-0">
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2">
@@ -321,9 +323,9 @@ export default function CardDetailSheet({
                           #{card.card_number}
                         </span>
                       )}
-                      <SheetTitle className="text-xl font-bold">
+                      <h2 className="text-xl font-bold">
                         {card.person_name}
-                      </SheetTitle>
+                      </h2>
                     </div>
                     {card.nickname && (
                       <p className="text-sm text-muted-foreground mt-0.5">
@@ -351,7 +353,7 @@ export default function CardDetailSheet({
                     />
                   </button>
                 </div>
-              </SheetHeader>
+              </div>
 
               {/* Company info */}
               {(card.company_name || card.department || card.position) && (
@@ -816,7 +818,7 @@ export default function CardDetailSheet({
             <p className="text-muted-foreground">名刺が見つかりません</p>
           </div>
         )}
-      </SheetContent>
-    </Sheet>
+      </div>
+    </>
   )
 }
