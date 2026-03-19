@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useAuth } from "@/components/AuthProvider"
 import CardRow from "@/components/CardRow"
+import CardBookSkeleton from "@/components/CardBookSkeleton"
 import CardDetailSheet from "@/components/CardDetailSheet"
 import DeleteConfirm from "@/components/DeleteConfirm"
 import {
@@ -84,6 +85,11 @@ export default function CardBook() {
     try {
       const fetchedTags = await getTags(user.id)
       setTags(fetchedTags)
+      try {
+        sessionStorage.setItem("myTags", JSON.stringify(fetchedTags))
+      } catch {
+        // Ignore storage errors
+      }
     } catch (err) {
       console.error("Failed to fetch tags:", err)
     }
@@ -118,6 +124,11 @@ export default function CardBook() {
       })
 
       setMyCards(cards)
+      try {
+        sessionStorage.setItem("myCards", JSON.stringify(cards))
+      } catch {
+        // Ignore storage errors (e.g. quota exceeded)
+      }
     } catch (err) {
       console.error("Failed to fetch cards:", err)
       toast.error("名刺の取得に失敗しました")
@@ -165,6 +176,22 @@ export default function CardBook() {
       setProfiles(p)
     } catch (err) {
       console.error("Failed to fetch profiles:", err)
+    }
+  }, [])
+
+  // Restore cached data for instant display on mount
+  useEffect(() => {
+    try {
+      const cachedCards = sessionStorage.getItem("myCards")
+      if (cachedCards) {
+        setMyCards(JSON.parse(cachedCards))
+      }
+      const cachedTags = sessionStorage.getItem("myTags")
+      if (cachedTags) {
+        setTags(JSON.parse(cachedTags))
+      }
+    } catch {
+      // Ignore parse errors from corrupted cache
     }
   }, [])
 
@@ -494,9 +521,7 @@ export default function CardBook() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         {loading && filteredMyCards.length === 0 && filteredGroupCards.length === 0 ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="size-8 animate-spin text-muted-foreground" />
-          </div>
+          <CardBookSkeleton />
         ) : activeTab === "mine" ? (
           /* === 自分 tab === */
           <div>
