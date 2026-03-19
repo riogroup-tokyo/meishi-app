@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
+import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { Bell, ChevronRight } from "lucide-react"
 import { useAuth } from "@/components/AuthProvider"
@@ -121,15 +122,15 @@ export default function NotificationBell({ onCardSelect }: NotificationBellProps
         )}
       </button>
 
-      {open && (
+      {open && createPortal(
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 z-[100] bg-black/30"
+            className="fixed inset-0 z-[9998] bg-black/30"
             onClick={() => setOpen(false)}
           />
           {/* Panel */}
-          <div className="fixed top-0 right-0 z-[101] w-full max-w-sm h-full bg-white shadow-xl flex flex-col">
+          <div className="fixed top-0 right-0 z-[9999] w-full max-w-sm h-full bg-white shadow-xl flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-[#b71c1c]">
               <h3 className="text-sm font-bold text-white">通知</h3>
@@ -209,7 +210,8 @@ export default function NotificationBell({ onCardSelect }: NotificationBellProps
               )}
             </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   )
