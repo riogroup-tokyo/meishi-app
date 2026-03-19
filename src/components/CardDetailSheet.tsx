@@ -78,6 +78,21 @@ export default function CardDetailSheet({
   const [connectionSearchResults, setConnectionSearchResults] = useState<BusinessCard[]>([])
   const [connectionSearching, setConnectionSearching] = useState(false)
 
+  // Lock body scroll when open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden"
+      document.body.style.touchAction = "none"
+    } else {
+      document.body.style.overflow = ""
+      document.body.style.touchAction = ""
+    }
+    return () => {
+      document.body.style.overflow = ""
+      document.body.style.touchAction = ""
+    }
+  }, [open])
+
   // Fetch card detail when opened
   useEffect(() => {
     if (!open || !cardId) {
@@ -298,8 +313,9 @@ export default function CardDetailSheet({
           </div>
         ) : card ? (
           <div
-            className="flex-1 overflow-y-auto"
+            className="flex-1 overflow-y-auto overscroll-contain"
             style={{ WebkitOverflowScrolling: "touch" }}
+            onTouchMove={(e) => e.stopPropagation()}
           >
             <div className="pb-8">
               {/* Card image */}
