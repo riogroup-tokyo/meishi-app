@@ -119,65 +119,83 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 max-h-96 bg-white rounded-xl shadow-xl border border-gray-200 z-[60] flex flex-col overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-            <h3 className="text-sm font-bold text-gray-900">通知</h3>
-            {unreadCount > 0 && (
-              <button
-                type="button"
-                onClick={handleMarkAllRead}
-                className="text-xs text-[#b71c1c] font-medium hover:underline"
-              >
-                すべて既読
-              </button>
-            )}
-          </div>
-
-          {/* List */}
-          <div className="flex-1 overflow-y-auto">
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="size-5 border-2 border-gray-300 border-t-[#b71c1c] rounded-full animate-spin" />
-              </div>
-            ) : notifications.length === 0 ? (
-              <div className="flex items-center justify-center py-8">
-                <p className="text-sm text-gray-400">通知はありません</p>
-              </div>
-            ) : (
-              notifications.map((n) => (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-[100] bg-black/30"
+            onClick={() => setOpen(false)}
+          />
+          {/* Panel */}
+          <div className="fixed top-0 right-0 z-[101] w-full max-w-sm h-full bg-white shadow-xl flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-[#b71c1c]">
+              <h3 className="text-sm font-bold text-white">通知</h3>
+              <div className="flex items-center gap-3">
+                {unreadCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleMarkAllRead}
+                    className="text-xs text-white/80 font-medium hover:text-white"
+                  >
+                    すべて既読
+                  </button>
+                )}
                 <button
-                  key={n.id}
                   type="button"
-                  onClick={() => {
-                    if (!n.is_read) handleMarkRead(n.id)
-                  }}
-                  className={`flex items-start gap-3 w-full px-4 py-3 text-left transition-colors hover:bg-gray-50 ${
-                    !n.is_read ? "bg-blue-50/50" : ""
-                  }`}
+                  onClick={() => setOpen(false)}
+                  className="text-white/80 hover:text-white text-lg leading-none"
                 >
-                  <span className="text-lg flex-shrink-0 mt-0.5">{getIcon(n.type)}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {n.title}
-                      </p>
-                      {!n.is_read && (
-                        <span className="size-2 rounded-full bg-blue-500 flex-shrink-0" />
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
-                      {n.message}
-                    </p>
-                    <p className="text-[10px] text-gray-400 mt-1">
-                      {formatTimestamp(n.created_at)}
-                    </p>
-                  </div>
+                  ✕
                 </button>
-              ))
-            )}
+              </div>
+            </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: "touch" }}>
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="size-6 border-2 border-gray-300 border-t-[#b71c1c] rounded-full animate-spin" />
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <span className="text-3xl mb-2">🔔</span>
+                  <p className="text-sm text-gray-400">通知はありません</p>
+                </div>
+              ) : (
+                notifications.map((n) => (
+                  <button
+                    key={n.id}
+                    type="button"
+                    onClick={() => {
+                      if (!n.is_read) handleMarkRead(n.id)
+                    }}
+                    className={`flex items-start gap-3 w-full px-4 py-3 text-left border-b border-gray-50 transition-colors active:bg-gray-100 ${
+                      !n.is_read ? "bg-blue-50/50" : ""
+                    }`}
+                  >
+                    <span className="text-lg flex-shrink-0 mt-0.5">{getIcon(n.type)}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {n.title}
+                        </p>
+                        {!n.is_read && (
+                          <span className="size-2 rounded-full bg-blue-500 flex-shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                        {n.message}
+                      </p>
+                      <p className="text-[10px] text-gray-400 mt-1">
+                        {formatTimestamp(n.created_at)}
+                      </p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )
