@@ -509,27 +509,41 @@ export default function CardDetailSheet({
                 )}
 
                 {card.app_number && (
-                  <div className="flex items-center gap-3 py-1 -mx-2 px-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(card.app_number!)
+                      toast.success("アプリ番号をコピーしました")
+                    }}
+                    className="flex items-center gap-3 py-1 -mx-2 px-2 w-full text-left rounded-lg active:bg-muted/60 transition-colors"
+                  >
                     <Hash className="size-4 text-[#b71c1c] flex-shrink-0" />
-                    <div>
+                    <div className="flex-1">
                       <p className="text-[10px] text-muted-foreground">
-                        アプリ番号
+                        アプリ番号 <span className="text-[9px]">タップでコピー</span>
                       </p>
                       <p className="text-sm text-foreground">{card.app_number}</p>
                     </div>
-                  </div>
+                  </button>
                 )}
 
                 {card.receipt_name && (
-                  <div className="flex items-center gap-3 py-1 -mx-2 px-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(card.receipt_name!)
+                      toast.success("領収書宛名をコピーしました")
+                    }}
+                    className="flex items-center gap-3 py-1 -mx-2 px-2 w-full text-left rounded-lg active:bg-muted/60 transition-colors"
+                  >
                     <Receipt className="size-4 text-[#b71c1c] flex-shrink-0" />
-                    <div>
+                    <div className="flex-1">
                       <p className="text-[10px] text-muted-foreground">
-                        領収書宛名
+                        領収書宛名 <span className="text-[9px]">タップでコピー</span>
                       </p>
                       <p className="text-sm text-foreground">{card.receipt_name}</p>
                     </div>
-                  </div>
+                  </button>
                 )}
 
                 {card.birthday && (

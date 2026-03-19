@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { Bell } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { Bell, ChevronRight } from "lucide-react"
 import { useAuth } from "@/components/AuthProvider"
 import {
   getNotifications,
@@ -12,7 +13,12 @@ import {
 } from "@/lib/actions"
 import type { Notification } from "@/types/database"
 
-export default function NotificationBell() {
+interface NotificationBellProps {
+  onCardSelect?: (cardId: string) => void
+}
+
+export default function NotificationBell({ onCardSelect }: NotificationBellProps) {
+  const router = useRouter()
   const { user } = useAuth()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -165,6 +171,14 @@ export default function NotificationBell() {
                     type="button"
                     onClick={() => {
                       if (!n.is_read) handleMarkRead(n.id)
+                      if (n.card_id) {
+                        setOpen(false)
+                        if (onCardSelect) {
+                          onCardSelect(n.card_id)
+                        } else {
+                          router.push(`/?card=${n.card_id}`)
+                        }
+                      }
                     }}
                     className={`flex items-start gap-3 w-full px-4 py-3 text-left border-b border-gray-50 transition-colors active:bg-gray-100 ${
                       !n.is_read ? "bg-blue-50/50" : ""
@@ -187,6 +201,9 @@ export default function NotificationBell() {
                         {formatTimestamp(n.created_at)}
                       </p>
                     </div>
+                    {n.card_id && (
+                      <ChevronRight className="size-4 text-gray-300 flex-shrink-0 mt-1" />
+                    )}
                   </button>
                 ))
               )}

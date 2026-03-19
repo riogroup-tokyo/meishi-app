@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import {
   Search,
   X,
@@ -35,7 +35,19 @@ type TabValue = "mine" | "group"
 
 export default function CardBook() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, loading: authLoading, isAuthenticated } = useAuth()
+
+  // Open card from URL param (e.g. from notification)
+  const cardFromUrl = searchParams.get("card")
+  useEffect(() => {
+    if (cardFromUrl) {
+      setDetailCardId(cardFromUrl)
+      setDetailOpen(true)
+      // Clean the URL
+      router.replace("/", { scroll: false })
+    }
+  }, [cardFromUrl, router])
 
   // Tab state
   const [activeTab, setActiveTab] = useState<TabValue>("mine")
