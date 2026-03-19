@@ -117,18 +117,20 @@ export default function CardDetailSheet({
         setCard(fullCard)
         setCardTags(fullCard.tags ?? [])
         setMemo(fullCard.memo ?? "")
+        setLoading(false)
 
-        const related = await getRelatedCards(cardId!)
-        if (cancelled) return
-        setRelatedCards(related)
+        // Load related/connections in background (non-blocking)
+        try {
+          const related = await getRelatedCards(cardId!)
+          if (!cancelled) setRelatedCards(related)
+        } catch { /* ignore */ }
 
-        const conns = await getCustomerConnections(cardId!)
-        if (cancelled) return
-        setConnections(conns)
+        try {
+          const conns = await getCustomerConnections(cardId!)
+          if (!cancelled) setConnections(conns)
+        } catch { /* ignore */ }
       } catch (err) {
         console.error("Failed to fetch card detail:", err)
-        toast.error("名刺詳細の取得に失敗しました")
-      } finally {
         if (!cancelled) setLoading(false)
       }
     }
@@ -370,20 +372,30 @@ export default function CardDetailSheet({
                       </p>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleToggleFavorite}
-                    className="p-2 rounded-full hover:bg-muted transition-colors"
-                  >
-                    <Star
-                      className={cn(
-                        "size-5",
-                        card.is_favorite
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "text-muted-foreground"
-                      )}
-                    />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={handleRecordVisit}
+                      className="px-2.5 py-1.5 rounded-full bg-[#b71c1c] text-white text-xs font-medium flex items-center gap-1 active:scale-95 transition-transform"
+                    >
+                      <CalendarCheck className="size-3.5" />
+                      来店
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleToggleFavorite}
+                      className="p-2 rounded-full hover:bg-muted transition-colors"
+                    >
+                      <Star
+                        className={cn(
+                          "size-5",
+                          card.is_favorite
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-muted-foreground"
+                        )}
+                      />
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -846,14 +858,6 @@ export default function CardDetailSheet({
 
               {/* Action buttons */}
               <div className="px-4 pb-4 flex gap-2">
-                <Button
-                  size="sm"
-                  className="flex-1 bg-[#b71c1c] hover:bg-[#b71c1c]/90 text-white"
-                  onClick={handleRecordVisit}
-                >
-                  <CalendarCheck className="size-4 mr-1.5" />
-                  来店
-                </Button>
                 <Button
                   variant="outline"
                   size="sm"

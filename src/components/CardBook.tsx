@@ -199,19 +199,28 @@ export default function CardBook() {
   useEffect(() => {
     if (!user) return
     setLoading(true)
-    Promise.all([fetchTags(), fetchProfiles()]).finally(() => setLoading(false))
-  }, [user, fetchTags, fetchProfiles])
+    Promise.all([
+      fetchTags(),
+      fetchProfiles(),
+      fetchMyCards(),
+      fetchGroupCards(),
+    ]).finally(() => setLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
 
-  // Fetch cards when tags loaded or search changes
+  // Refetch when search changes
   useEffect(() => {
     if (!user) return
-    setLoading(true)
-    if (activeTab === "mine") {
-      fetchMyCards().finally(() => setLoading(false))
-    } else {
-      fetchGroupCards().finally(() => setLoading(false))
+    const fetch = async () => {
+      if (activeTab === "mine") {
+        await fetchMyCards()
+      } else {
+        await fetchGroupCards()
+      }
     }
-  }, [user, activeTab, debouncedQuery, tags, fetchMyCards, fetchGroupCards])
+    fetch()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedQuery, activeTab])
 
   // Pull to refresh
   const handleRefresh = useCallback(async () => {

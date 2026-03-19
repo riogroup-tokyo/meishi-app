@@ -18,7 +18,6 @@ export default function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const panelRef = useRef<HTMLDivElement>(null)
   const generatedRef = useRef(false)
 
   // Generate notifications once on mount
@@ -47,16 +46,16 @@ export default function NotificationBell() {
       .finally(() => setLoading(false))
   }, [open, user])
 
-  // Close on outside click
+  // Lock body scroll when panel is open
   useEffect(() => {
-    if (!open) return
-    const handler = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
+    if (open) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = ""
     }
-    document.addEventListener("mousedown", handler)
-    return () => document.removeEventListener("mousedown", handler)
+    return () => {
+      document.body.style.overflow = ""
+    }
   }, [open])
 
   const handleMarkRead = useCallback(async (id: string) => {
@@ -103,7 +102,7 @@ export default function NotificationBell() {
   }
 
   return (
-    <div className="relative" ref={panelRef}>
+    <div className="relative">
       <button
         type="button"
         onClick={() => setOpen(!open)}
