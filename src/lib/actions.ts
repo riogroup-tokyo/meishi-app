@@ -15,6 +15,7 @@ import type {
   CalendarEventUpdate,
   CustomerConnection,
   Notification,
+  SignupRequest,
 } from '@/types/database'
 
 // ============================================================
@@ -869,4 +870,95 @@ export async function generateNotifications(userId: string): Promise<void> {
       }
     }
   }
+}
+
+// ============================================================
+// Signup Requests (承認制)
+// ============================================================
+
+export async function createSignupRequest(userId: string, displayName: string, email: string): Promise<void> {
+  const { error } = await supabase
+    .from('signup_requests')
+    .insert({ user_id: userId, display_name: displayName, email })
+  if (error) throw new Error(`Failed to create signup request: ${error.message}`)
+}
+
+export async function getPendingSignupRequests(): Promise<SignupRequest[]> {
+  const { data, error } = await supabase
+    .from('signup_requests')
+    .select('*')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true })
+  if (error) throw new Error(`Failed to fetch requests: ${error.message}`)
+  return (data ?? []) as SignupRequest[]
+}
+
+export async function approveSignupRequest(requestId: string, reviewerId: string): Promise<void> {
+  // Get the request
+  const { data: req, error: fetchErr } = await supabase
+    .from('signup_requests')
+    .select('*')
+    .eq('id', requestId)
+    .single()
+  if (fetchErr || !req) throw new Error('Request not found')
+
+  const request = req as SignupRequest
+
+  // Approve the profile
+  const { error: profileErr } = await supabase
+    .from('profiles')
+    .update({ is_approved: true } as Record<string, unknown>)
+    .eq('id', request.user_id)
+  if (profileErr) throw new Error(`Failed to approve profile: ${profileErr.message}`)
+
+  // Update request status
+  const { error: updateErr } = await supabase
+    .from('signup_requests')
+    .update({
+      status: 'approved',
+      reviewed_by: reviewerId,
+      reviewed_at: new Date().toISOString(),
+    } as Record<string, unknown>)
+    .eq('id', requestId)
+  if (updateErr) throw new Error(`Failed to update request: ${updateErr.message}`)
+}
+
+export async function rejectSignupRequest(requestId: string, reviewerId: string): Promise<void> {
+  const { data: req } = await supabase
+    .from('signup_requests')
+    .select('user_id')
+    .eq('id', requestId)
+    .single()
+
+  // Update request status
+  await supabase
+    .from('signup_requests')
+    .update({
+      status: 'rejected',
+      reviewed_by: reviewerId,
+      reviewed_at: new Date().toISOString(),
+    } as Record<string, unknown>)
+    .eq('id', requestId)
+
+  // Delete the user completely if rejected
+  if (req) {
+    try {
+      await supabase.rpc('delete_user_completely', {
+        target_user_id: (req as { user_id: string }).user_id,
+      })
+    } catch {
+      // ignore - user may already be deleted
+    }
+  }
+}
+
+export async function getSignupRequestStatus(userId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('signup_requests')
+    .select('status')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+  if (error || !data || data.length === 0) return null
+  return (data[0] as { status: string }).status
 }

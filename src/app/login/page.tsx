@@ -17,6 +17,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/components/AuthProvider"
 import { supabase } from "@/lib/supabase"
+import { createSignupRequest } from "@/lib/actions"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -28,6 +29,8 @@ export default function LoginPage() {
       router.push("/")
     }
   }, [authLoading, isAuthenticated, router])
+
+  const [showPendingMessage, setShowPendingMessage] = useState(false)
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState("")
@@ -105,22 +108,24 @@ export default function LoginPage() {
       const user = await signUp(signupEmail, signupPassword, signupDisplayName.trim())
 
       if (user) {
-        // Wait a moment for auth to settle, then create profile
         await new Promise(resolve => setTimeout(resolve, 500))
 
-        const { error: profileError } = await supabase.from("profiles").upsert({
+        // Create profile (not approved yet)
+        await supabase.from("profiles").upsert({
           id: user.id,
           display_name: signupDisplayName.trim(),
           email: signupEmail.trim(),
+          is_approved: false,
         })
 
-        if (profileError) {
-          console.error("Profile creation error:", profileError)
-        }
+        // Create signup request for admin approval
+        await createSignupRequest(user.id, signupDisplayName.trim(), signupEmail.trim())
+
+        // Sign out - they can't use the app until approved
+        await supabase.auth.signOut()
       }
 
-      toast.success("アカウントを作成しました")
-      router.push("/")
+      setShowPendingMessage(true)
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "アカウント作成に失敗しました"
@@ -136,6 +141,37 @@ export default function LoginPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  // Show pending approval message after signup
+  if (showPendingMessage) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <header className="bg-[#b71c1c] text-center py-3 pb-2">
+          <img src="https://ranking.riogroup.info/img/logo.png" alt="RioGroupロゴ" className="max-w-[200px] mx-auto" />
+        </header>
+        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+          <div className="size-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
+            <span className="text-2xl">✅</span>
+          </div>
+          <h2 className="text-lg font-bold text-foreground mb-2">登録リクエストを送信しました</h2>
+          <p className="text-sm text-muted-foreground mb-2">
+            管理者がアカウントを承認するとご利用いただけます。
+          </p>
+          <p className="text-sm text-muted-foreground mb-6">
+            承認されるまでしばらくお待ちください。<br />
+            お急ぎの場合は管理者にご連絡ください。
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => setShowPendingMessage(false)}
+            className="mt-2"
+          >
+            ログイン画面に戻る
+          </Button>
+        </div>
       </div>
     )
   }

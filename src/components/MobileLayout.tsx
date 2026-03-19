@@ -28,7 +28,7 @@ export function MobileLayout({
   noPadding = false,
 }: MobileLayoutProps) {
   const router = useRouter()
-  const { user, profile, loading, isAuthenticated, isAdmin } = useAuth()
+  const { user, profile, loading, isAuthenticated, isAdmin, isApproved, signOut } = useAuth()
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -42,6 +42,36 @@ export function MobileLayout({
 
   if (!isAuthenticated) {
     return null
+  }
+
+  // Show pending approval screen
+  if (!isApproved && !isAdmin) {
+    return (
+      <div className="min-h-[100dvh] flex flex-col bg-background">
+        <header className="bg-[#b71c1c] text-center py-3 pb-2">
+          <img src="https://ranking.riogroup.info/img/logo.png" alt="RioGroupロゴ" className="max-w-[200px] mx-auto" />
+        </header>
+        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+          <div className="size-16 rounded-full bg-amber-100 flex items-center justify-center mb-4">
+            <span className="text-2xl">⏳</span>
+          </div>
+          <h2 className="text-lg font-bold text-foreground mb-2">承認待ち</h2>
+          <p className="text-sm text-muted-foreground mb-2">
+            アカウントの承認をお待ちください。
+          </p>
+          <p className="text-sm text-muted-foreground mb-6">
+            管理者が承認すると利用できるようになります。<br />
+            管理者にご連絡ください。
+          </p>
+          <button
+            onClick={async () => { await signOut(); router.push("/login") }}
+            className="text-sm text-[#b71c1c] font-medium hover:underline"
+          >
+            ログアウト
+          </button>
+        </div>
+      </div>
+    )
   }
 
   const displayName = profile?.display_name || user?.email || ""

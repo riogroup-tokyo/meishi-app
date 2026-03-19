@@ -23,6 +23,7 @@ export interface Profile {
   avatar_url: string | null
   email: string | null
   is_admin: boolean
+  is_approved: boolean
 }
 
 interface AuthContextType {
@@ -31,6 +32,7 @@ interface AuthContextType {
   loading: boolean
   isAuthenticated: boolean
   isAdmin: boolean
+  isApproved: boolean
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string, displayName?: string) => Promise<User>
   signOut: () => Promise<void>
@@ -48,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url, email, is_admin")
+        .select("id, display_name, avatar_url, email, is_admin, is_approved")
         .eq("id", userId)
         .single()
 
@@ -152,6 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         isAuthenticated: !!user,
         isAdmin: profile?.is_admin ?? false,
+        isApproved: profile?.is_approved ?? false,
         signIn,
         signUp,
         signOut,

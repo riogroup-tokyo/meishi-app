@@ -162,6 +162,7 @@ export interface Database {
           avatar_url: string | null
           email: string | null
           is_admin: boolean
+          is_approved: boolean
           created_at: string
           updated_at: string
         }
@@ -171,6 +172,7 @@ export interface Database {
           avatar_url?: string | null
           email?: string | null
           is_admin?: boolean
+          is_approved?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -180,8 +182,32 @@ export interface Database {
           avatar_url?: string | null
           email?: string | null
           is_admin?: boolean
+          is_approved?: boolean
           created_at?: string
           updated_at?: string
+        }
+      }
+      signup_requests: {
+        Row: {
+          id: string
+          user_id: string
+          display_name: string
+          email: string
+          status: string
+          reviewed_by: string | null
+          created_at: string
+          reviewed_at: string | null
+        }
+        Insert: {
+          user_id: string
+          display_name: string
+          email: string
+          status?: string
+        }
+        Update: {
+          status?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
         }
       }
       customer_connections: {
@@ -331,3 +357,6 @@ export type CustomerConnectionInsert = Database['public']['Tables']['customer_co
 
 export type Notification = Database['public']['Tables']['notifications']['Row']
 export type NotificationInsert = Database['public']['Tables']['notifications']['Insert']
+
+export type SignupRequest = Database['public']['Tables']['signup_requests']['Row']
+export type SignupRequestInsert = Database['public']['Tables']['signup_requests']['Insert']
