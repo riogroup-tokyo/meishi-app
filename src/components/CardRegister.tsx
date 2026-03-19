@@ -20,6 +20,7 @@ import {
   getTags,
   createTag,
   addTagToCard,
+  getNextCardNumber,
 } from "@/lib/actions"
 import { recognizeBusinessCard } from "@/lib/ocr"
 import {
@@ -57,6 +58,9 @@ export default function CardRegister() {
   const [position, setPosition] = useState("")
   const [personName, setPersonName] = useState("")
   const [personNameKana, setPersonNameKana] = useState("")
+  const [nickname, setNickname] = useState("")
+  const [appNumber, setAppNumber] = useState("")
+  const [receiptName, setReceiptName] = useState("")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [mobilePhone, setMobilePhone] = useState("")
@@ -110,6 +114,11 @@ export default function CardRegister() {
           if (result.position) setPosition(result.position)
           if (result.person_name) setPersonName(result.person_name)
           if (result.person_name_kana) setPersonNameKana(result.person_name_kana)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const ext = result as any
+          if (ext.nickname) setNickname(ext.nickname)
+          if (ext.app_number) setAppNumber(ext.app_number)
+          if (ext.receipt_name) setReceiptName(ext.receipt_name)
           if (result.email) setEmail(result.email)
           if (result.phone) setPhone(result.phone)
           if (result.mobile_phone) setMobilePhone(result.mobile_phone)
@@ -195,6 +204,9 @@ export default function CardRegister() {
         }
       }
 
+      // Get next card number
+      const cardNumber = await getNextCardNumber(user.id)
+
       // Create card
       const card = await createCard({
         user_id: user.id,
@@ -204,6 +216,10 @@ export default function CardRegister() {
         position: position || null,
         person_name: personName.trim(),
         person_name_kana: personNameKana || null,
+        nickname: nickname || null,
+        app_number: appNumber || null,
+        receipt_name: receiptName || null,
+        card_number: cardNumber,
         email: email || null,
         phone: phone || null,
         mobile_phone: mobilePhone || null,
@@ -235,6 +251,9 @@ export default function CardRegister() {
     position,
     personName,
     personNameKana,
+    nickname,
+    appNumber,
+    receiptName,
     email,
     phone,
     mobilePhone,
@@ -404,6 +423,48 @@ export default function CardRegister() {
               value={personNameKana}
               onChange={(e) => setPersonNameKana(e.target.value)}
               placeholder="ヤマダ タロウ"
+              className="h-10"
+            />
+          </div>
+
+          {/* Nickname */}
+          <div>
+            <Label htmlFor="nickname" className="text-xs text-muted-foreground mb-1 block">
+              ニックネーム
+            </Label>
+            <Input
+              id="nickname"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="ニックネーム"
+              className="h-10"
+            />
+          </div>
+
+          {/* App Number */}
+          <div>
+            <Label htmlFor="app_number" className="text-xs text-muted-foreground mb-1 block">
+              アプリ番号
+            </Label>
+            <Input
+              id="app_number"
+              value={appNumber}
+              onChange={(e) => setAppNumber(e.target.value)}
+              placeholder="アプリ番号"
+              className="h-10"
+            />
+          </div>
+
+          {/* Receipt Name */}
+          <div>
+            <Label htmlFor="receipt_name" className="text-xs text-muted-foreground mb-1 block">
+              領収書宛名
+            </Label>
+            <Input
+              id="receipt_name"
+              value={receiptName}
+              onChange={(e) => setReceiptName(e.target.value)}
+              placeholder="領収書宛名"
               className="h-10"
             />
           </div>

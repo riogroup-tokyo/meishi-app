@@ -63,9 +63,21 @@ function CardRowInner({
 
       {/* Center content */}
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm text-foreground truncate">
-          {card.person_name}
-        </p>
+        <div className="flex items-center gap-1.5 truncate">
+          {card.card_number != null && (
+            <span className="inline-flex items-center px-1 py-0 rounded text-[10px] font-mono text-muted-foreground bg-muted flex-shrink-0">
+              No.{card.card_number}
+            </span>
+          )}
+          <p className="font-semibold text-sm text-foreground truncate">
+            {card.person_name}
+            {card.nickname && (
+              <span className="font-normal text-muted-foreground">
+                {" "}({card.nickname})
+              </span>
+            )}
+          </p>
+        </div>
         {subtitle && (
           <p className="text-xs text-muted-foreground truncate mt-0.5">
             {subtitle}

@@ -27,6 +27,10 @@ export interface Database {
           website: string | null
           memo: string | null
           is_favorite: boolean
+          app_number: string | null
+          nickname: string | null
+          receipt_name: string | null
+          card_number: number | null
           created_at: string
           updated_at: string
         }
@@ -47,6 +51,10 @@ export interface Database {
           website?: string | null
           memo?: string | null
           is_favorite?: boolean
+          app_number?: string | null
+          nickname?: string | null
+          receipt_name?: string | null
+          card_number?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -67,6 +75,10 @@ export interface Database {
           website?: string | null
           memo?: string | null
           is_favorite?: boolean
+          app_number?: string | null
+          nickname?: string | null
+          receipt_name?: string | null
+          card_number?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -143,6 +155,7 @@ export interface Database {
           display_name: string
           avatar_url: string | null
           email: string | null
+          is_admin: boolean
           created_at: string
           updated_at: string
         }
@@ -151,6 +164,7 @@ export interface Database {
           display_name: string
           avatar_url?: string | null
           email?: string | null
+          is_admin?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -159,8 +173,31 @@ export interface Database {
           display_name?: string
           avatar_url?: string | null
           email?: string | null
+          is_admin?: boolean
           created_at?: string
           updated_at?: string
+        }
+      }
+      customer_connections: {
+        Row: {
+          id: string
+          card_id_1: string
+          card_id_2: string
+          connection_type: string | null
+          note: string | null
+          created_at: string
+        }
+        Insert: {
+          card_id_1: string
+          card_id_2: string
+          connection_type?: string | null
+          note?: string | null
+        }
+        Update: {
+          card_id_1?: string
+          card_id_2?: string
+          connection_type?: string | null
+          note?: string | null
         }
       }
       messages: {
@@ -250,3 +287,6 @@ export type MessageInsert = Database['public']['Tables']['messages']['Insert']
 export type CalendarEvent = Database['public']['Tables']['calendar_events']['Row']
 export type CalendarEventInsert = Database['public']['Tables']['calendar_events']['Insert']
 export type CalendarEventUpdate = Database['public']['Tables']['calendar_events']['Update']
+
+export type CustomerConnection = Database['public']['Tables']['customer_connections']['Row']
+export type CustomerConnectionInsert = Database['public']['Tables']['customer_connections']['Insert']

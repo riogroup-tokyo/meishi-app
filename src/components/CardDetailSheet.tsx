@@ -14,6 +14,10 @@ import {
   Plus,
   X,
   Loader2,
+  Search,
+  Hash,
+  Receipt,
+  Users,
 } from "lucide-react"
 import {
   Sheet,
@@ -25,15 +29,20 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import type { BusinessCard, Tag } from "@/types/database"
 import {
   getCard,
+  getCards,
   getRelatedCards,
   addTagToCard,
   removeTagFromCard,
   updateCard,
   toggleFavorite,
+  getCustomerConnections,
+  addCustomerConnection,
+  removeCustomerConnection,
 } from "@/lib/actions"
 import { toast } from "sonner"
 
@@ -65,12 +74,22 @@ export default function CardDetailSheet({
   const [memoSaving, setMemoSaving] = useState(false)
   const [showTagPicker, setShowTagPicker] = useState(false)
 
+  // Connections (知人)
+  const [connections, setConnections] = useState<
+    (BusinessCard & { connection_id: string; connection_type: string | null; note: string | null })[]
+  >([])
+  const [showConnectionSearch, setShowConnectionSearch] = useState(false)
+  const [connectionSearchQuery, setConnectionSearchQuery] = useState("")
+  const [connectionSearchResults, setConnectionSearchResults] = useState<BusinessCard[]>([])
+  const [connectionSearching, setConnectionSearching] = useState(false)
+
   // Fetch card detail when opened
   useEffect(() => {
     if (!open || !cardId) {
       setCard(null)
       setCardTags([])
       setRelatedCards([])
+      setConnections([])
       return
     }
 
@@ -88,6 +107,10 @@ export default function CardDetailSheet({
         const related = await getRelatedCards(cardId!)
         if (cancelled) return
         setRelatedCards(related)
+
+        const conns = await getCustomerConnections(cardId!)
+        if (cancelled) return
+        setConnections(conns)
       } catch (err) {
         console.error("Failed to fetch card detail:", err)
         toast.error("名刺詳細の取得に失敗しました")
@@ -192,6 +215,68 @@ export default function CardDetailSheet({
     toast.success("vCardをダウンロードしました")
   }, [card])
 
+  // Connection search
+  const handleConnectionSearch = useCallback(
+    async (query: string) => {
+      setConnectionSearchQuery(query)
+      if (!query.trim() || !card) {
+        setConnectionSearchResults([])
+        return
+      }
+      setConnectionSearching(true)
+      try {
+        const results = await getCards(card.user_id, { search: query.trim() })
+        // Exclude current card and already-connected cards
+        const connectedIds = new Set(connections.map((c) => c.id))
+        connectedIds.add(card.id)
+        setConnectionSearchResults(results.filter((r) => !connectedIds.has(r.id)))
+      } catch {
+        toast.error("検索に失敗しました")
+      } finally {
+        setConnectionSearching(false)
+      }
+    },
+    [card, connections]
+  )
+
+  const handleAddConnection = useCallback(
+    async (targetCardId: string) => {
+      if (!card) return
+      try {
+        await addCustomerConnection(card.id, targetCardId)
+        // Refresh connections
+        const conns = await getCustomerConnections(card.id)
+        setConnections(conns)
+        setShowConnectionSearch(false)
+        setConnectionSearchQuery("")
+        setConnectionSearchResults([])
+        toast.success("知人を追加しました")
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "不明なエラー"
+        if (message.includes("already exists")) {
+          toast.error("この知人関係は既に登録されています")
+        } else {
+          toast.error("知人の追加に失敗しました")
+        }
+      }
+    },
+    [card]
+  )
+
+  const handleRemoveConnection = useCallback(
+    async (connectionId: string) => {
+      if (!card) return
+      try {
+        await removeCustomerConnection(connectionId)
+        setConnections((prev) => prev.filter((c) => c.connection_id !== connectionId))
+        toast.success("知人を削除しました")
+      } catch {
+        toast.error("知人の削除に失敗しました")
+      }
+    },
+    [card]
+  )
+
   const availableTags = allTags.filter(
     (t) => !cardTags.some((ct) => ct.id === t.id)
   )
@@ -230,9 +315,21 @@ export default function CardDetailSheet({
               <SheetHeader className="px-4 pb-0">
                 <div className="flex items-start justify-between">
                   <div>
-                    <SheetTitle className="text-xl font-bold">
-                      {card.person_name}
-                    </SheetTitle>
+                    <div className="flex items-center gap-2">
+                      {card.card_number != null && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-muted text-xs font-mono text-muted-foreground">
+                          #{card.card_number}
+                        </span>
+                      )}
+                      <SheetTitle className="text-xl font-bold">
+                        {card.person_name}
+                      </SheetTitle>
+                    </div>
+                    {card.nickname && (
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {card.nickname}
+                      </p>
+                    )}
                     {card.person_name_kana && (
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {card.person_name_kana}
@@ -363,6 +460,30 @@ export default function CardDetailSheet({
                       <p className="text-sm text-foreground">{card.address}</p>
                     </div>
                   </a>
+                )}
+
+                {card.app_number && (
+                  <div className="flex items-center gap-3 py-1 -mx-2 px-2">
+                    <Hash className="size-4 text-[#b71c1c] flex-shrink-0" />
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">
+                        アプリ番号
+                      </p>
+                      <p className="text-sm text-foreground">{card.app_number}</p>
+                    </div>
+                  </div>
+                )}
+
+                {card.receipt_name && (
+                  <div className="flex items-center gap-3 py-1 -mx-2 px-2">
+                    <Receipt className="size-4 text-[#b71c1c] flex-shrink-0" />
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">
+                        領収書宛名
+                      </p>
+                      <p className="text-sm text-foreground">{card.receipt_name}</p>
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -521,6 +642,134 @@ export default function CardDetailSheet({
                   </div>
                 </>
               )}
+
+              <Separator className="my-4" />
+
+              {/* Connections (知人) */}
+              <div className="px-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    知人
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowConnectionSearch(!showConnectionSearch)}
+                    className="p-1 rounded-full hover:bg-muted transition-colors"
+                  >
+                    <Plus className="size-4 text-muted-foreground" />
+                  </button>
+                </div>
+
+                {connections.length > 0 && (
+                  <div className="space-y-2 mb-3">
+                    {connections.map((conn) => (
+                      <div
+                        key={conn.connection_id}
+                        className="flex items-center gap-2 p-2 rounded-lg bg-muted/50"
+                      >
+                        <div className="size-8 rounded-full bg-[#b71c1c]/10 flex items-center justify-center text-[#b71c1c] text-xs font-semibold flex-shrink-0">
+                          {conn.person_name?.charAt(0) ?? "?"}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {conn.person_name}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {conn.company_name}
+                          </p>
+                        </div>
+                        {conn.connection_type && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-[#b71c1c]/10 text-[#b71c1c] flex-shrink-0">
+                            {conn.connection_type}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveConnection(conn.connection_id)}
+                          className="p-1 rounded-full hover:bg-muted transition-colors flex-shrink-0"
+                        >
+                          <X className="size-3.5 text-muted-foreground" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {connections.length === 0 && !showConnectionSearch && (
+                  <p className="text-xs text-muted-foreground mb-3">知人なし</p>
+                )}
+
+                {/* Connection search panel */}
+                {showConnectionSearch && (
+                  <div className="p-3 rounded-lg bg-muted/50 border border-border space-y-3 mb-3">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                      <Input
+                        value={connectionSearchQuery}
+                        onChange={(e) => handleConnectionSearch(e.target.value)}
+                        placeholder="名前・会社名で検索..."
+                        className="h-9 pl-8"
+                        autoFocus
+                      />
+                    </div>
+
+                    {connectionSearching && (
+                      <div className="flex items-center justify-center py-2">
+                        <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                      </div>
+                    )}
+
+                    {!connectionSearching && connectionSearchResults.length > 0 && (
+                      <div className="max-h-40 overflow-y-auto space-y-1">
+                        {connectionSearchResults.map((result) => (
+                          <button
+                            key={result.id}
+                            type="button"
+                            onClick={() => handleAddConnection(result.id)}
+                            className="flex items-center gap-2 w-full p-2 rounded-md hover:bg-muted active:bg-muted/80 transition-colors text-left"
+                          >
+                            <div className="size-7 rounded-full bg-[#b71c1c]/10 flex items-center justify-center text-[#b71c1c] text-xs font-semibold flex-shrink-0">
+                              {result.person_name?.charAt(0) ?? "?"}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {result.person_name}
+                              </p>
+                              {result.company_name && (
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {result.company_name}
+                                </p>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {!connectionSearching &&
+                      connectionSearchQuery.trim() &&
+                      connectionSearchResults.length === 0 && (
+                        <p className="text-xs text-muted-foreground text-center py-2">
+                          該当する名刺が見つかりません
+                        </p>
+                      )}
+
+                    <div className="flex justify-end">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setShowConnectionSearch(false)
+                          setConnectionSearchQuery("")
+                          setConnectionSearchResults([])
+                        }}
+                      >
+                        閉じる
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <Separator className="my-4" />
 

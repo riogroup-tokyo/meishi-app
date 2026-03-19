@@ -2,7 +2,8 @@
 
 import { useEffect, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
-import { Search } from "lucide-react"
+import { Search, Settings } from "lucide-react"
+import Link from "next/link"
 import { useAuth } from "@/components/AuthProvider"
 import { LoadingScreen } from "@/components/LoadingScreen"
 import { BottomNav } from "@/components/BottomNav"
@@ -26,7 +27,7 @@ export function MobileLayout({
   noPadding = false,
 }: MobileLayoutProps) {
   const router = useRouter()
-  const { user, profile, loading, isAuthenticated } = useAuth()
+  const { user, profile, loading, isAuthenticated, isAdmin } = useAuth()
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -48,12 +49,21 @@ export function MobileLayout({
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background">
       {/* Brand Header */}
-      <header className="bg-[#b71c1c] text-center py-3 pb-2">
+      <header className="bg-[#b71c1c] text-center py-3 pb-2 relative">
         <img
           src="https://ranking.riogroup.info/img/logo.png"
           alt="RioGroupロゴ"
           className="max-w-[200px] mx-auto"
         />
+        {isAdmin && (
+          <Link
+            href="/admin"
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-white/20 transition-colors"
+            aria-label="管理者設定"
+          >
+            <Settings className="size-5 text-white/80" />
+          </Link>
+        )}
       </header>
 
       {/* Page Header */}

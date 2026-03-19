@@ -52,6 +52,7 @@ export default function CardBook() {
   const [searchQuery, setSearchQuery] = useState("")
   const [debouncedQuery, setDebouncedQuery] = useState("")
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
 
   // Tag filter toggle
   const handleToggleTagFilter = useCallback((tagId: string) => {
@@ -277,16 +278,20 @@ export default function CardBook() {
     [filteredMyCards]
   )
 
-  // Filter group cards by selected tags
+  // Filter group cards by selectedUserId and then by selected tags
   const filteredGroupCards = useMemo(() => {
-    if (selectedTagIds.length === 0) return groupCards
-    return groupCards.filter((card) => {
+    let cards = groupCards
+    if (selectedUserId) {
+      cards = cards.filter((card) => card.user_id === selectedUserId)
+    }
+    if (selectedTagIds.length === 0) return cards
+    return cards.filter((card) => {
       const cardTags = cardTagMap.get(card.id) ?? []
       return selectedTagIds.every((tagId) => cardTags.some((t) => t.id === tagId))
     })
-  }, [groupCards, selectedTagIds, cardTagMap])
+  }, [groupCards, selectedUserId, selectedTagIds, cardTagMap])
 
-  // Group cards by user_id for the グループ tab
+  // Group cards by user_id for the グループ tab (only when no user filter is active)
   const groupedByUser = useMemo(() => {
     const grouped = new Map<string, BusinessCard[]>()
     for (const card of filteredGroupCards) {
@@ -295,7 +300,7 @@ export default function CardBook() {
       grouped.set(card.user_id, existing)
     }
     return grouped
-  }, [groupCards])
+  }, [filteredGroupCards])
 
   const getProfileName = useCallback(
     (userId: string) => {
@@ -313,7 +318,10 @@ export default function CardBook() {
         <div className="flex border-b">
           <button
             type="button"
-            onClick={() => setActiveTab("mine")}
+            onClick={() => {
+              setActiveTab("mine")
+              setSelectedUserId(null)
+            }}
             className={cn(
               "flex-1 py-2.5 text-sm font-medium text-center transition-colors relative",
               activeTab === "mine"
@@ -366,8 +374,84 @@ export default function CardBook() {
           </div>
         </div>
 
-        {/* Tag filter - scrollable horizontal pills */}
-        {tags.length > 0 && (
+        {/* Group tab: Account filter pills (top row) */}
+        {activeTab === "group" && profiles.length > 0 && (
+          <div className="px-4 pb-1 flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <button
+              type="button"
+              onClick={() => setSelectedUserId(null)}
+              className={cn(
+                "shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-all border",
+                selectedUserId === null
+                  ? "border-[#b71c1c] bg-[#b71c1c] text-white"
+                  : "border-border bg-muted text-muted-foreground"
+              )}
+            >
+              すべて
+            </button>
+            {profiles.map((p) => {
+              const isSelected = selectedUserId === p.id
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setSelectedUserId(isSelected ? null : p.id)}
+                  className={cn(
+                    "shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-all border",
+                    isSelected
+                      ? "border-[#b71c1c] bg-[#b71c1c] text-white"
+                      : "border-border bg-muted text-muted-foreground"
+                  )}
+                >
+                  {p.display_name ?? "不明"}
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Tag filter pills - shown per tab context */}
+        {activeTab === "mine" && tags.length > 0 && (
+          <div className="px-4 pb-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <button
+              type="button"
+              onClick={() => setSelectedTagIds([])}
+              className={cn(
+                "shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-all border",
+                selectedTagIds.length === 0
+                  ? "border-[#b71c1c] bg-[#b71c1c] text-white"
+                  : "border-border bg-muted text-muted-foreground"
+              )}
+            >
+              すべて
+            </button>
+            {tags.map((tag) => {
+              const isSelected = selectedTagIds.includes(tag.id)
+              return (
+                <button
+                  key={tag.id}
+                  type="button"
+                  onClick={() => handleToggleTagFilter(tag.id)}
+                  className={cn(
+                    "shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all border",
+                    isSelected
+                      ? "border-[#b71c1c] bg-[#b71c1c]/10 text-[#b71c1c]"
+                      : "border-border bg-muted text-muted-foreground"
+                  )}
+                >
+                  <span
+                    className="size-2 rounded-full"
+                    style={{ backgroundColor: tag.color }}
+                  />
+                  {tag.name}
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Group tab: Tag filter pills (bottom row) */}
+        {activeTab === "group" && tags.length > 0 && (
           <div className="px-4 pb-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
             <button
               type="button"
@@ -522,14 +606,20 @@ export default function CardBook() {
                   </div>
                   <div>
                     {cards.map((card) => (
-                      <CardRow
-                        key={card.id}
-                        card={card}
-                        tags={cardTagMap.get(card.id)}
-                        isFavorite={card.is_favorite}
-                        onCardClick={handleCardClick}
-                        onToggleFavorite={handleToggleFavorite}
-                      />
+                      <div key={card.id}>
+                        <CardRow
+                          card={card}
+                          tags={cardTagMap.get(card.id)}
+                          isFavorite={card.is_favorite}
+                          onCardClick={handleCardClick}
+                          onToggleFavorite={handleToggleFavorite}
+                        />
+                        <div className="px-4 -mt-2 mb-1 ml-[52px]">
+                          <span className="text-[11px] text-gray-400">
+                            登録者: {getProfileName(card.user_id)}
+                          </span>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>

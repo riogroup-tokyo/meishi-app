@@ -13,6 +13,7 @@ import type {
   CalendarEvent,
   CalendarEventInsert,
   CalendarEventUpdate,
+  CustomerConnection,
 } from '@/types/database'
 
 // ============================================================
@@ -587,5 +588,151 @@ export async function deleteCalendarEvent(id: string): Promise<void> {
 
   if (error) {
     throw new Error(`Failed to delete calendar event: ${error.message}`)
+  }
+}
+
+// ============================================================
+// Card Numbers
+// ============================================================
+
+export async function getNextCardNumber(userId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from('business_cards')
+    .select('card_number')
+    .eq('user_id', userId)
+    .order('card_number', { ascending: false })
+    .limit(1)
+
+  if (error) throw new Error(`Failed to get card number: ${error.message}`)
+  const maxNum = (data?.[0] as { card_number: number | null })?.card_number ?? 0
+  return maxNum + 1
+}
+
+// ============================================================
+// Customer Connections (知人関係)
+// ============================================================
+
+export async function getCustomerConnections(
+  cardId: string
+): Promise<(BusinessCard & { connection_id: string; connection_type: string | null; note: string | null })[]> {
+  // Get connections where this card is either side
+  const { data: connections, error: connError } = await supabase
+    .from('customer_connections')
+    .select('*')
+    .or(`card_id_1.eq.${cardId},card_id_2.eq.${cardId}`)
+
+  if (connError) {
+    throw new Error(`Failed to fetch customer connections: ${connError.message}`)
+  }
+
+  const conns = (connections ?? []) as CustomerConnection[]
+  if (conns.length === 0) {
+    return []
+  }
+
+  // Build a map of other card ID -> connection metadata
+  const connMap = new Map<
+    string,
+    { connection_id: string; connection_type: string | null; note: string | null }
+  >()
+  for (const conn of conns) {
+    const otherId = conn.card_id_1 === cardId ? conn.card_id_2 : conn.card_id_1
+    connMap.set(otherId, {
+      connection_id: conn.id,
+      connection_type: conn.connection_type,
+      note: conn.note,
+    })
+  }
+
+  const otherIds = Array.from(connMap.keys())
+
+  const { data: cards, error: cardsError } = await supabase
+    .from('business_cards')
+    .select('*')
+    .in('id', otherIds)
+
+  if (cardsError) {
+    throw new Error(`Failed to fetch connected cards: ${cardsError.message}`)
+  }
+
+  return ((cards ?? []) as BusinessCard[]).map((card) => ({
+    ...card,
+    connection_id: connMap.get(card.id)!.connection_id,
+    connection_type: connMap.get(card.id)!.connection_type,
+    note: connMap.get(card.id)!.note,
+  }))
+}
+
+export async function addCustomerConnection(
+  cardId1: string,
+  cardId2: string,
+  connectionType?: string,
+  note?: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('customer_connections')
+    .insert({
+      card_id_1: cardId1,
+      card_id_2: cardId2,
+      connection_type: connectionType ?? '知人',
+      note: note ?? null,
+    } as Record<string, unknown>)
+
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('This connection already exists')
+    }
+    throw new Error(`Failed to add customer connection: ${error.message}`)
+  }
+}
+
+export async function removeCustomerConnection(connectionId: string): Promise<void> {
+  const { error } = await supabase
+    .from('customer_connections')
+    .delete()
+    .eq('id', connectionId)
+
+  if (error) {
+    throw new Error(`Failed to remove customer connection: ${error.message}`)
+  }
+}
+
+// ============================================================
+// Admin Functions
+// ============================================================
+
+export async function adminDeleteCard(cardId: string): Promise<void> {
+  const { error } = await supabase
+    .from('business_cards')
+    .delete()
+    .eq('id', cardId)
+
+  if (error) {
+    throw new Error(`Failed to delete card (admin): ${error.message}`)
+  }
+}
+
+export async function adminDeleteProfile(profileId: string): Promise<void> {
+  // Delete the profile; cascading foreign keys will remove related data.
+  // Note: Deleting the auth user requires a service-role client, so for now
+  // we only delete the profile row (RLS ensures admin-only access).
+  const { error } = await supabase
+    .from('profiles')
+    .delete()
+    .eq('id', profileId)
+
+  if (error) {
+    throw new Error(`Failed to delete profile (admin): ${error.message}`)
+  }
+}
+
+export async function setAdminStatus(profileId: string, isAdmin: boolean): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ is_admin: isAdmin } as Record<string, unknown>)
+    .eq('id', profileId)
+
+  if (error) {
+    throw new Error(`Failed to update admin status: ${error.message}`)
   }
 }
