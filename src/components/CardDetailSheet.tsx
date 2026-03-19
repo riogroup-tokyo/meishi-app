@@ -285,21 +285,21 @@ export default function CardDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="h-[85vh] rounded-t-2xl p-0"
+        className="h-[85dvh] rounded-t-2xl p-0 flex flex-col"
         showCloseButton={false}
       >
         {/* Drag handle */}
-        <div className="flex justify-center pt-3 pb-1">
+        <div className="flex justify-center pt-3 pb-1 shrink-0">
           <div className="w-10 h-1 bg-muted-foreground/30 rounded-full" />
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center flex-1">
             <Loader2 className="size-8 animate-spin text-muted-foreground" />
           </div>
         ) : card ? (
-          <ScrollArea className="h-full">
-            <div className="pb-safe pb-8">
+          <div className="flex-1 overflow-y-auto overscroll-contain">
+            <div className="pb-8">
               {/* Card image */}
               {card.image_url && (
                 <div className="px-4 pt-2 pb-3">
@@ -810,7 +810,7 @@ export default function CardDetailSheet({
                 </Button>
               </div>
             </div>
-          </ScrollArea>
+          </div>
         ) : (
           <div className="flex items-center justify-center h-full">
             <p className="text-muted-foreground">名刺が見つかりません</p>

@@ -47,7 +47,7 @@ export async function getCards(
   if (search) {
     const pattern = `%${search}%`
     query = query.or(
-      `person_name.ilike.${pattern},company_name.ilike.${pattern},email.ilike.${pattern},memo.ilike.${pattern},department.ilike.${pattern},position.ilike.${pattern}`
+      `person_name.ilike.${pattern},company_name.ilike.${pattern},email.ilike.${pattern},memo.ilike.${pattern},department.ilike.${pattern},position.ilike.${pattern},nickname.ilike.${pattern},app_number.ilike.${pattern},receipt_name.ilike.${pattern}`
     )
   }
 
@@ -223,7 +223,7 @@ export async function getGroupCards(
   if (search) {
     const pattern = `%${search}%`
     query = query.or(
-      `person_name.ilike.${pattern},company_name.ilike.${pattern},email.ilike.${pattern},memo.ilike.${pattern},department.ilike.${pattern},position.ilike.${pattern}`
+      `person_name.ilike.${pattern},company_name.ilike.${pattern},email.ilike.${pattern},memo.ilike.${pattern},department.ilike.${pattern},position.ilike.${pattern},nickname.ilike.${pattern},app_number.ilike.${pattern},receipt_name.ilike.${pattern}`
     )
   }
 

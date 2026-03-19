@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import {
   Camera,
   ImageIcon,
@@ -17,10 +17,14 @@ import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/components/AuthProvider"
 import {
   createCard,
+  updateCard,
+  getCard,
   getTags,
   createTag,
   addTagToCard,
+  removeTagFromCard,
   getNextCardNumber,
+  getCardTagsForCards,
 } from "@/lib/actions"
 import { recognizeBusinessCard } from "@/lib/ocr"
 import {
@@ -45,7 +49,12 @@ const TAG_COLORS = [
 
 export default function CardRegister() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const editId = searchParams.get("edit")
   const { user, loading: authLoading, isAuthenticated } = useAuth()
+
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [editCardId, setEditCardId] = useState<string | null>(null)
 
   // Image
   const [imageFile, setImageFile] = useState<File | null>(null)
@@ -90,6 +99,43 @@ export default function CardRegister() {
       .then(setTags)
       .catch((err) => console.error("Failed to fetch tags:", err))
   }, [user])
+
+  // Load card data for edit mode
+  useEffect(() => {
+    if (!editId || !user) return
+    setIsEditMode(true)
+    setEditCardId(editId)
+
+    async function loadCard() {
+      try {
+        const fullCard = await getCard(editId!)
+        setCompanyName(fullCard.company_name ?? "")
+        setDepartment(fullCard.department ?? "")
+        setPosition(fullCard.position ?? "")
+        setPersonName(fullCard.person_name)
+        setPersonNameKana(fullCard.person_name_kana ?? "")
+        setNickname(fullCard.nickname ?? "")
+        setAppNumber(fullCard.app_number ?? "")
+        setReceiptName(fullCard.receipt_name ?? "")
+        setEmail(fullCard.email ?? "")
+        setPhone(fullCard.phone ?? "")
+        setMobilePhone(fullCard.mobile_phone ?? "")
+        setPostalCode(fullCard.postal_code ?? "")
+        setAddress(fullCard.address ?? "")
+        setWebsite(fullCard.website ?? "")
+        setMemo(fullCard.memo ?? "")
+        if (fullCard.image_url) setImagePreview(fullCard.image_url)
+
+        // Load existing tags
+        const cardTags = await getCardTagsForCards([editId!])
+        setSelectedTagIds(cardTags.map((ct) => ct.tag_id))
+      } catch (err) {
+        console.error("Failed to load card:", err)
+        toast.error("名刺の読み込みに失敗しました")
+      }
+    }
+    loadCard()
+  }, [editId, user])
 
   // Handle image selection
   const handleImageSelected = useCallback(
@@ -192,23 +238,18 @@ export default function CardRegister() {
 
     setSaving(true)
     try {
-      let imageUrl: string | null = null
+      let imageUrl: string | null = imagePreview?.startsWith("http") ? imagePreview : null
 
-      // Upload image (non-blocking - card saves even if upload fails)
+      // Upload new image (non-blocking)
       if (imageFile) {
         try {
           imageUrl = await uploadCardImage(imageFile, user.id)
         } catch (uploadErr) {
           console.error("Image upload failed:", uploadErr)
-          // Continue saving card without image
         }
       }
 
-      // Get next card number
-      const cardNumber = await getNextCardNumber(user.id)
-
-      // Create card
-      const card = await createCard({
+      const cardData = {
         user_id: user.id,
         image_url: imageUrl,
         company_name: companyName || null,
@@ -219,7 +260,6 @@ export default function CardRegister() {
         nickname: nickname || null,
         app_number: appNumber || null,
         receipt_name: receiptName || null,
-        card_number: cardNumber,
         email: email || null,
         phone: phone || null,
         mobile_phone: mobilePhone || null,
@@ -227,14 +267,39 @@ export default function CardRegister() {
         address: address || null,
         website: website || null,
         memo: memo || null,
-      })
-
-      // Link tags
-      for (const tagId of selectedTagIds) {
-        await addTagToCard(card.id, tagId)
       }
 
-      toast.success("名刺を保存しました")
+      if (isEditMode && editCardId) {
+        // Update existing card
+        await updateCard(editCardId, cardData)
+
+        // Sync tags: get current, remove old, add new
+        const currentCardTags = await getCardTagsForCards([editCardId])
+        const currentTagIds = currentCardTags.map((ct) => ct.tag_id)
+        for (const tagId of currentTagIds) {
+          if (!selectedTagIds.includes(tagId)) {
+            await removeTagFromCard(editCardId, tagId)
+          }
+        }
+        for (const tagId of selectedTagIds) {
+          if (!currentTagIds.includes(tagId)) {
+            await addTagToCard(editCardId, tagId)
+          }
+        }
+
+        toast.success("名刺を更新しました")
+      } else {
+        // Create new card
+        const cardNumber = await getNextCardNumber(user.id)
+        const card = await createCard({ ...cardData, card_number: cardNumber })
+
+        for (const tagId of selectedTagIds) {
+          await addTagToCard(card.id, tagId)
+        }
+
+        toast.success("名刺を保存しました")
+      }
+
       router.push("/")
     } catch (err) {
       console.error("Failed to save card:", err)
@@ -246,6 +311,9 @@ export default function CardRegister() {
   }, [
     user,
     imageFile,
+    imagePreview,
+    isEditMode,
+    editCardId,
     companyName,
     department,
     position,
@@ -277,7 +345,7 @@ export default function CardRegister() {
           >
             キャンセル
           </button>
-          <h1 className="text-base font-bold text-foreground">名刺登録</h1>
+          <h1 className="text-base font-bold text-foreground">{isEditMode ? "名刺編集" : "名刺登録"}</h1>
           <div className="w-16" />
         </div>
       </header>
@@ -573,7 +641,7 @@ export default function CardRegister() {
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
               placeholder="メモを入力..."
-              rows={3}
+              rows={6}
               className="w-full rounded-lg border border-border bg-background p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#b71c1c]/30 focus:border-[#b71c1c] transition-colors"
             />
           </div>
@@ -684,10 +752,10 @@ export default function CardRegister() {
           {saving ? (
             <>
               <Loader2 className="size-5 animate-spin mr-2" />
-              保存中...
+              {isEditMode ? "更新中..." : "保存中..."}
             </>
           ) : (
-            "保存"
+            isEditMode ? "更新" : "保存"
           )}
         </Button>
       </div>
