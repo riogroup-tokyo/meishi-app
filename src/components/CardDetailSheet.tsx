@@ -317,7 +317,7 @@ export default function CardDetailSheet({
             style={{ WebkitOverflowScrolling: "touch" }}
             onTouchMove={(e) => e.stopPropagation()}
           >
-            <div className="pb-8">
+            <div className="pb-24">
               {/* Card image */}
               {card.image_url && (
                 <div className="px-4 pt-2 pb-3">
