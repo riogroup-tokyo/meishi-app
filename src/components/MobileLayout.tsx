@@ -8,6 +8,7 @@ import { useAuth } from "@/components/AuthProvider"
 import { LoadingScreen } from "@/components/LoadingScreen"
 import { BottomNav } from "@/components/BottomNav"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import NotificationBell from "@/components/NotificationBell"
 
 interface MobileLayoutProps {
   children: ReactNode
@@ -50,20 +51,23 @@ export function MobileLayout({
     <div className="min-h-[100dvh] flex flex-col bg-background">
       {/* Brand Header */}
       <header className="bg-[#b71c1c] text-center py-3 pb-2 relative">
-        <img
-          src="https://ranking.riogroup.info/img/logo.png"
-          alt="RioGroupロゴ"
-          className="max-w-[200px] mx-auto"
-        />
         {isAdmin && (
           <Link
             href="/admin"
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-white/20 transition-colors"
+            className="absolute left-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-white/20 transition-colors"
             aria-label="管理者設定"
           >
             <Settings className="size-5 text-white/80" />
           </Link>
         )}
+        <img
+          src="https://ranking.riogroup.info/img/logo.png"
+          alt="RioGroupロゴ"
+          className="max-w-[200px] mx-auto"
+        />
+        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+          <NotificationBell />
+        </div>
       </header>
 
       {/* Page Header */}

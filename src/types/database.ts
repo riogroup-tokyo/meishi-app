@@ -31,6 +31,8 @@ export interface Database {
           nickname: string | null
           receipt_name: string | null
           card_number: number | null
+          birthday: string | null
+          last_visit_date: string | null
           created_at: string
           updated_at: string
         }
@@ -55,6 +57,8 @@ export interface Database {
           nickname?: string | null
           receipt_name?: string | null
           card_number?: number | null
+          birthday?: string | null
+          last_visit_date?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -79,6 +83,8 @@ export interface Database {
           nickname?: string | null
           receipt_name?: string | null
           card_number?: number | null
+          birthday?: string | null
+          last_visit_date?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -214,6 +220,38 @@ export interface Database {
           created_at?: string
         }
       }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          card_id: string | null
+          type: string
+          title: string
+          message: string
+          is_read: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          card_id?: string | null
+          type: string
+          title: string
+          message: string
+          is_read?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          card_id?: string | null
+          type?: string
+          title?: string
+          message?: string
+          is_read?: boolean
+          created_at?: string
+        }
+      }
       calendar_events: {
         Row: {
           id: string
@@ -290,3 +328,6 @@ export type CalendarEventUpdate = Database['public']['Tables']['calendar_events'
 
 export type CustomerConnection = Database['public']['Tables']['customer_connections']['Row']
 export type CustomerConnectionInsert = Database['public']['Tables']['customer_connections']['Insert']
+
+export type Notification = Database['public']['Tables']['notifications']['Row']
+export type NotificationInsert = Database['public']['Tables']['notifications']['Insert']

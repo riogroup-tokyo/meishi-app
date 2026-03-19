@@ -18,6 +18,8 @@ import {
   Hash,
   Receipt,
   Users,
+  CalendarCheck,
+  Cake,
 } from "lucide-react"
 // Using custom modal instead of Sheet for iOS scroll compatibility
 import { Button } from "@/components/ui/button"
@@ -38,7 +40,9 @@ import {
   getCustomerConnections,
   addCustomerConnection,
   removeCustomerConnection,
+  recordVisit,
 } from "@/lib/actions"
+import { format } from "date-fns"
 import { toast } from "sonner"
 
 interface CardDetailSheetProps {
@@ -148,6 +152,18 @@ export default function CardDetailSheet({
       )
     } catch {
       toast.error("お気に入りの切り替えに失敗しました")
+    }
+  }, [card, onRefresh])
+
+  const handleRecordVisit = useCallback(async () => {
+    if (!card) return
+    try {
+      const updated = await recordVisit(card.id)
+      setCard((prev) => (prev ? { ...prev, last_visit_date: updated.last_visit_date } : null))
+      toast.success("来店を記録しました")
+      onRefresh?.()
+    } catch {
+      toast.error("来店の記録に失敗しました")
     }
   }, [card, onRefresh])
 
@@ -503,6 +519,43 @@ export default function CardDetailSheet({
                     </div>
                   </div>
                 )}
+
+                {card.birthday && (
+                  <div className="flex items-center gap-3 py-1 -mx-2 px-2">
+                    <Cake className="size-4 text-[#b71c1c] flex-shrink-0" />
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">
+                        生年月日
+                      </p>
+                      <p className="text-sm text-foreground">
+                        {format(new Date(card.birthday), "yyyy年MM月dd日")}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {card.last_visit_date && (() => {
+                  const lastVisit = new Date(card.last_visit_date!)
+                  const now = new Date()
+                  const diffDays = Math.floor((now.getTime() - lastVisit.getTime()) / (1000 * 60 * 60 * 24))
+                  const isOverdue = diffDays > 30
+                  return (
+                    <div className="flex items-center gap-3 py-1 -mx-2 px-2">
+                      <CalendarCheck className={cn("size-4 flex-shrink-0", isOverdue ? "text-red-600" : "text-[#b71c1c]")} />
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">
+                          最終来店日
+                        </p>
+                        <p className={cn("text-sm", isOverdue ? "text-red-600 font-medium" : "text-foreground")}>
+                          {format(lastVisit, "yyyy年MM月dd日")}
+                          {isOverdue && (
+                            <span className="ml-1 text-xs">({diffDays}日前 - 要フォロー)</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
 
               <Separator className="my-4" />
@@ -793,6 +846,14 @@ export default function CardDetailSheet({
 
               {/* Action buttons */}
               <div className="px-4 pb-4 flex gap-2">
+                <Button
+                  size="sm"
+                  className="flex-1 bg-[#b71c1c] hover:bg-[#b71c1c]/90 text-white"
+                  onClick={handleRecordVisit}
+                >
+                  <CalendarCheck className="size-4 mr-1.5" />
+                  来店
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"

@@ -21,6 +21,13 @@ function CardRowInner({
   onToggleFavorite,
 }: CardRowProps) {
   const initial = card.person_name?.charAt(0) ?? "?"
+  const isVisitOverdue = (() => {
+    if (!card.last_visit_date) return false
+    const lastVisit = new Date(card.last_visit_date)
+    const now = new Date()
+    const diffDays = Math.floor((now.getTime() - lastVisit.getTime()) / (1000 * 60 * 60 * 24))
+    return diffDays > 30
+  })()
 
   const handleStarClick = useCallback(
     (e: React.MouseEvent) => {
@@ -45,7 +52,7 @@ function CardRowInner({
       className="flex items-center w-full gap-3 px-4 py-3 text-left transition-colors active:bg-muted/60 hover:bg-muted/40 min-h-[56px]"
     >
       {/* Avatar / Initial */}
-      <div className="flex-shrink-0">
+      <div className="flex-shrink-0 relative">
         {card.image_url ? (
           <div className="size-10 rounded-full overflow-hidden bg-muted">
             <img
@@ -58,6 +65,9 @@ function CardRowInner({
           <div className="size-10 rounded-full bg-[#b71c1c]/10 flex items-center justify-center text-[#b71c1c] font-semibold text-base">
             {initial}
           </div>
+        )}
+        {isVisitOverdue && (
+          <span className="absolute -top-0.5 -right-0.5 size-3 rounded-full bg-red-500 border-2 border-white" title="30日以上来店なし" />
         )}
       </div>
 

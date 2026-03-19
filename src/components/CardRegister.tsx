@@ -70,6 +70,8 @@ export default function CardRegister() {
   const [nickname, setNickname] = useState("")
   const [appNumber, setAppNumber] = useState("")
   const [receiptName, setReceiptName] = useState("")
+  const [birthday, setBirthday] = useState("")
+  const [lastVisitDate, setLastVisitDate] = useState("")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [mobilePhone, setMobilePhone] = useState("")
@@ -117,6 +119,8 @@ export default function CardRegister() {
         setNickname(fullCard.nickname ?? "")
         setAppNumber(fullCard.app_number ?? "")
         setReceiptName(fullCard.receipt_name ?? "")
+        setBirthday(fullCard.birthday ?? "")
+        setLastVisitDate(fullCard.last_visit_date ?? "")
         setEmail(fullCard.email ?? "")
         setPhone(fullCard.phone ?? "")
         setMobilePhone(fullCard.mobile_phone ?? "")
@@ -260,6 +264,8 @@ export default function CardRegister() {
         nickname: nickname || null,
         app_number: appNumber || null,
         receipt_name: receiptName || null,
+        birthday: birthday || null,
+        last_visit_date: lastVisitDate || null,
         email: email || null,
         phone: phone || null,
         mobile_phone: mobilePhone || null,
@@ -322,6 +328,8 @@ export default function CardRegister() {
     nickname,
     appNumber,
     receiptName,
+    birthday,
+    lastVisitDate,
     email,
     phone,
     mobilePhone,
@@ -533,6 +541,34 @@ export default function CardRegister() {
               value={receiptName}
               onChange={(e) => setReceiptName(e.target.value)}
               placeholder="領収書宛名"
+              className="h-10"
+            />
+          </div>
+
+          {/* Birthday */}
+          <div>
+            <Label htmlFor="birthday" className="text-xs text-muted-foreground mb-1 block">
+              生年月日
+            </Label>
+            <Input
+              id="birthday"
+              type="date"
+              value={birthday}
+              onChange={(e) => setBirthday(e.target.value)}
+              className="h-10"
+            />
+          </div>
+
+          {/* Last Visit Date */}
+          <div>
+            <Label htmlFor="last_visit_date" className="text-xs text-muted-foreground mb-1 block">
+              最終来店日
+            </Label>
+            <Input
+              id="last_visit_date"
+              type="date"
+              value={lastVisitDate}
+              onChange={(e) => setLastVisitDate(e.target.value)}
               className="h-10"
             />
           </div>
