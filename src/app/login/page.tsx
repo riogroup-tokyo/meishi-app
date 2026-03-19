@@ -108,18 +108,36 @@ export default function LoginPage() {
       const user = await signUp(signupEmail, signupPassword, signupDisplayName.trim())
 
       if (user) {
-        await new Promise(resolve => setTimeout(resolve, 500))
+        await new Promise(resolve => setTimeout(resolve, 1000))
 
         // Create profile (not approved yet)
-        await supabase.from("profiles").upsert({
+        const { error: profileErr } = await supabase.from("profiles").upsert({
           id: user.id,
           display_name: signupDisplayName.trim(),
           email: signupEmail.trim(),
-          is_approved: false,
         })
+        if (profileErr) {
+          console.error("Profile error:", profileErr)
+        }
+
+        // Set is_approved to false (separate update to avoid RLS issues with upsert)
+        await supabase.from("profiles")
+          .update({ is_approved: false } as Record<string, unknown>)
+          .eq("id", user.id)
 
         // Create signup request for admin approval
-        await createSignupRequest(user.id, signupDisplayName.trim(), signupEmail.trim())
+        try {
+          await createSignupRequest(user.id, signupDisplayName.trim(), signupEmail.trim())
+        } catch (reqErr) {
+          console.error("Signup request error:", reqErr)
+          // Fallback: insert directly
+          await supabase.from("signup_requests").insert({
+            user_id: user.id,
+            display_name: signupDisplayName.trim(),
+            email: signupEmail.trim(),
+            status: "pending",
+          })
+        }
 
         // Sign out - they can't use the app until approved
         await supabase.auth.signOut()
