@@ -715,15 +715,13 @@ export async function adminDeleteCard(cardId: string): Promise<void> {
 
 export async function adminDeleteProfile(profileId: string): Promise<void> {
   // Delete the profile; cascading foreign keys will remove related data.
-  // Note: Deleting the auth user requires a service-role client, so for now
-  // we only delete the profile row (RLS ensures admin-only access).
-  const { error } = await supabase
-    .from('profiles')
-    .delete()
-    .eq('id', profileId)
+  // Use the SQL function to delete from auth.users (profile cascades)
+  const { error } = await supabase.rpc('delete_user_completely', {
+    target_user_id: profileId,
+  })
 
   if (error) {
-    throw new Error(`Failed to delete profile (admin): ${error.message}`)
+    throw new Error(`Failed to delete user: ${error.message}`)
   }
 }
 
